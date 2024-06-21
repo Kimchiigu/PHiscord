@@ -17,6 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "electron": "^31.0.1",
+    "firebase": "^10.12.2",
     "react-router-dom": "^6.23.1"
   }
 }
