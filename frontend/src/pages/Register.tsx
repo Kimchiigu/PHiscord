@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import '../App.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from "./firebaseConfig";
-import { setDoc, doc } from "firebase/firestore";
+import { setDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -60,7 +60,23 @@ function Register() {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 toast.success('Account created successfully!');
-                await setDoc(doc(db, "Users", user.uid), {
+
+                // Get the current user counter
+                const counterRef = doc(db, "Counters", "UserCounter");
+                const counterDoc = await getDoc(counterRef);
+                let lastID = 0;
+
+                if (counterDoc.exists()) {
+                    lastID = counterDoc.data().lastID;
+                } else {
+                    // Create the UserCounter document if it doesn't exist
+                    await setDoc(counterRef, { lastID: 0 });
+                }
+
+                const newUserID = 'US' + (lastID + 1).toString();
+
+                // Save the new user with the incremented user ID
+                await setDoc(doc(db, "Users", newUserID), {
                     email: user.email,
                     displayName: displayName,
                     username: username,
@@ -68,6 +84,12 @@ function Register() {
                     month: month,
                     date: date
                 });
+
+                // Update the user counter
+                await updateDoc(counterRef, {
+                    lastID: lastID + 1
+                });
+
                 navigate('/login');
             } catch (error) {
                 toast.error((error as Error).message);
