@@ -6,8 +6,13 @@ interface Server {
   serverName: string;
 }
 
-const ServerIcon: React.FC<{ server: Server }> = ({ server }) => (
-  <div className="relative group cursor-pointer mb-4">
+interface ServerIconProps {
+  server: Server;
+  onClick: () => void;
+}
+
+const ServerIcon: React.FC<ServerIconProps> = ({ server, onClick }) => (
+  <div className="relative group cursor-pointer mb-4" onClick={onClick}>
     <div className="bg-white h-12 w-12 flex items-center justify-center text-black text-2xl font-semibold rounded-3xl mb-1 overflow-hidden transition-all duration-300 group-hover:rounded-lg">
       <img src={server.serverIconUrl} alt={server.serverName} />
     </div>

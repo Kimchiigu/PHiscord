@@ -15,7 +15,7 @@ function ProfileBar() {
       <div className="flex items-center">
         <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="User Avatar" className="w-10 h-10 rounded-full" />
         <div className="ml-3">
-          <p className="text-sm font-semibold text-left">{currentUser?.username}</p>
+          <p className="text-sm font-semibold text-left">{currentUser?.displayName}</p>
           <p className="text-xs text-gray-400 text-left">#{currentUser?.discriminator}</p>
         </div>
       </div>

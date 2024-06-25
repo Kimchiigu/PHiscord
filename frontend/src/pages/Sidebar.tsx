@@ -13,24 +13,26 @@ interface Server {
   inviteLink: string;
 }
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onServerSelect: (id: string, name: string, isOwner: boolean) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onServerSelect }) => {
   const { currentUser } = useAuth();
   const [servers, setServers] = useState<Server[]>([]);
   const [showModal, setShowModal] = useState(false);
 
   const fetchServers = async () => {
     if (!currentUser) return;
-  
+
     const serversCollection = collection(db, 'Servers');
-    // Fetch servers where the current user is the owner
     const ownerQuery = query(serversCollection, where('ownerId', '==', currentUser.uid));
     const ownerSnapshot = await getDocs(ownerQuery);
     const ownerServers = ownerSnapshot.docs.map(doc => ({
       serverID: doc.id,
       ...doc.data()
     })) as Server[];
-  
-    // Fetch servers where the current user is a member
+
     const memberServers: Server[] = [];
     const serverSnapshot = await getDocs(serversCollection);
     for (const serverDoc of serverSnapshot.docs) {
@@ -46,12 +48,10 @@ const Sidebar: React.FC = () => {
         }
       }
     }
-  
-    // Combine owner servers and member servers
+
     const combinedServers = [...ownerServers, ...memberServers];
     setServers(combinedServers);
   };
-  
 
   useEffect(() => {
     fetchServers();
@@ -73,12 +73,17 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
       {servers.length > 0 ? (
-        servers.map(server => <ServerIcon key={server.serverID} server={server} />)
+        servers.map(server => (
+          <ServerIcon
+            key={server.serverID}
+            server={server}
+            onClick={() => onServerSelect(server.serverID, server.serverName, server.ownerId === currentUser?.uid)}
+          />
+        ))
       ) : (
         <p className="text-gray-400 pt-3 pb-8">No servers yet</p>
       )}
 
-      {/* Add Server */}
       <div className="cursor-pointer" onClick={handleAddServerClick}>
         <div
           className="bg-white opacity-25 h-12 w-12 flex items-center justify-center text-black text-2xl font-semibold rounded-3xl mb-1 overflow-hidden transition-all duration-200 transform hover:rounded-xl"
