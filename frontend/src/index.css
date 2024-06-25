@@ -64,6 +64,39 @@
       --input: 217.2 32.6% 17.5%;
       --ring: 212.7 26.8% 83.9%;
     }
+
+    [data-theme="dark"] {
+      --bg-color: #1a202c;
+      --bg-color-second: #2a303d;
+      --text-color: #ffffff;
+      --primary-color: #4a59e2;
+      --primary-color-hover: #293be3;
+      /* Add other variables as needed */
+    }
+    
+    [data-theme="light"] {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --text-color-button: #ffffff;
+      --primary-color: #4a59e2;
+      --primary-color-hover: #293be3;
+      /* Add other variables as needed */
+    }
+
+    [data-theme="purple"] {
+      --bg-color: #370058;
+      --text-color: #ffffff;
+      --primary-color: #913dd2;
+      --primary-color-hover: #913dd2;
+      /* Add other variables as needed */
+    }
+
+    [data-theme="cyan"] {
+      --bg-color: #92f8ff;
+      --text-color: #2d2d2d;
+      --primary-color: #078fc1;
+      /* Add other variables as needed */
+    }
   }
 
   @layer base {

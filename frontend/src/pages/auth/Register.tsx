@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import '../App.css';
+import '../../App.css';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth, db } from "./firebaseConfig";
-import { setDoc, doc, getDoc, updateDoc } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from "../firebaseConfig";
+import { setDoc, doc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -59,44 +59,27 @@ function Register() {
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-                toast.success('Account created successfully!');
-
-                // Get the current user counter
-                const counterRef = doc(db, "Counters", "UserCounter");
-                const counterDoc = await getDoc(counterRef);
-                let lastID = 0;
-
-                if (counterDoc.exists()) {
-                    lastID = counterDoc.data().lastID;
-                } else {
-                    // Create the UserCounter document if it doesn't exist
-                    await setDoc(counterRef, { lastID: 0 });
-                }
-
-                const newUserID = 'US' + (lastID + 1).toString();
-
-                // Save the new user with the incremented user ID
-                await setDoc(doc(db, "Users", newUserID), {
+                await updateProfile(user, {
+                    displayName: username
+                });
+                await setDoc(doc(db, "Users", user.uid), {
                     email: user.email,
                     displayName: displayName,
                     username: username,
-                    year: year,
-                    month: month,
-                    date: date
+                    dob: {
+                        year: parseInt(year),
+                        month: parseInt(month),
+                        date: parseInt(date)
+                    }
                 });
-
-                // Update the user counter
-                await updateDoc(counterRef, {
-                    lastID: lastID + 1
-                });
-
+                toast.success('Account created successfully!');
                 navigate('/login');
             } catch (error) {
                 toast.error((error as Error).message);
             }
         }
     };
-
+    
     return (
         <div className="w-full max-w-sm p-6 m-auto mx-auto bg-slate-700 rounded-lg shadow-md dark:bg-gray-800">
             <h1 className="text-center text-gray-200 text-xl font-bold mt-4">Create an account</h1>
@@ -176,18 +159,18 @@ function Register() {
                             onChange={(e) => setMonth(e.target.value)}
                         >
                             <option value="">Month</option>
-                            <option>January</option>
-                            <option>February</option>
-                            <option>March</option>
-                            <option>April</option>
-                            <option>May</option>
-                            <option>June</option>
-                            <option>July</option>
-                            <option>August</option>
-                            <option>September</option>
-                            <option>October</option>
-                            <option>November</option>
-                            <option>December</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
                         </select>
 
                         <select

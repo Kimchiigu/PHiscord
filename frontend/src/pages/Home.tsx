@@ -21,19 +21,30 @@ function Home() {
     const [age, setAge] = useState<number | null>(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            const user = auth.currentUser;
+    const fetchUserData = async () => {
+        auth.onAuthStateChanged(async (user) => {
             if (user) {
-                const userDoc = await getDoc(doc(db, 'Users', user.uid));
-                if (userDoc.exists()) {
-                    const data = userDoc.data() as UserInfo;
+                const docRef = doc(db, "Users", user.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data() as UserInfo;
+                    console.log("Retrieved user data:", data); // Debug log
                     setUserInfo(data);
-                    calculateAge(data.dob);
+                    if (data.dob) {
+                        calculateAge(data.dob);
+                    } else {
+                        console.error("DOB is undefined in user data");
+                    }
+                } else {
+                    console.log("No such document!");
                 }
+            } else {
+                console.log("User is not logged in");
             }
-        };
+        });
+    };
 
+    useEffect(() => {
         fetchUserData();
     }, []);
 
@@ -76,7 +87,7 @@ function Home() {
                     </div>
                     <div>
                         <h2 className="text-lg font-semibold">Age</h2>
-                        <p>{age}</p>
+                        <p>{age !== null ? age : 'N/A'}</p>
                     </div>
                     <button
                         onClick={handleLogout}
