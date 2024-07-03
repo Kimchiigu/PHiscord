@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { db, storage } from './firebaseConfig';
+import { db, storage } from '../firebaseConfig';
 import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { useAuth } from './provider/AuthProvider';
-import Message from './Message';
-import MentionsList from './MentionsList';
+import { useAuth } from '../provider/AuthProvider';
+import Message from '../Message';
 
 interface MessageData {
   id: string;
@@ -15,7 +14,7 @@ interface MessageData {
   editedTimestamp?: any;
 }
 
-const Chat: React.FC<{ serverID: string; channelID: string; channelName: string }> = ({ serverID, channelID, channelName }) => {
+const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   const { currentUser } = useAuth();
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -24,11 +23,10 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<{ id: string; visible: boolean }>({ id: '', visible: false });
-  const [mentionList, setMentionList] = useState<{ id: string; displayName: string; profilePicture: string }[]>([]);
-  const [mentionVisible, setMentionVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MessageData[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
+  const [friendDisplayName, setFriendDisplayName] = useState<string>('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
@@ -38,15 +36,15 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   const isVideo = (url: string) => /(\.mp4|\.webm|\.ogg)$/.test(url);
 
   useEffect(() => {
-    if (!serverID || !channelID) {
-      console.error('Server ID or Channel ID is not defined');
+    if (!friendId || !currentUser) {
+      console.error('Friend ID or current user is not defined');
       return;
     }
 
     const fetchMessages = () => {
       setLoading(true);
       try {
-        const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
+        const messagesCollection = collection(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages');
         const messagesQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(20));
 
         onSnapshot(messagesQuery, (snapshot) => {
@@ -68,41 +66,32 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
     };
 
     fetchMessages();
-  }, [serverID, channelID]);
+  }, [friendId, currentUser]);
 
   useEffect(() => {
-    const fetchMentions = async () => {
-      setLoading(true);
-      const membersCollection = collection(db, 'Servers', serverID, 'Members');
-      const memberSnapshot = await getDocs(membersCollection);
-      const membersList: { id: string; displayName: string; profilePicture: string }[] = [];
-
-      for (const memberDoc of memberSnapshot.docs) {
-        const memberData = memberDoc.data() as { userId: string; role: string };
-        const userDoc = await getDoc(doc(db, 'Users', memberData.userId));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const member = {
-            id: memberData.userId,
-            displayName: userData.displayName,
-            profilePicture: userData.profilePicture || defaultProfilePicture,
-          };
-          membersList.push(member);
+    const fetchFriendDisplayName = async () => {
+      try {
+        const friendDoc = await getDoc(doc(db, 'Users', friendId));
+        if (friendDoc.exists()) {
+          setFriendDisplayName(friendDoc.data().displayName || 'Unknown');
+        } else {
+          setFriendDisplayName('Unknown');
         }
+      } catch (error) {
+        console.error('Error fetching friend display name:', error);
+        setFriendDisplayName('Unknown');
       }
-      setMentionList(membersList);
-      setLoading(false);
     };
 
-    fetchMentions();
-  }, [serverID]);
+    fetchFriendDisplayName();
+  }, [friendId]);
 
   const fetchOlderMessages = async () => {
     if (!lastVisible) return;
 
     setLoading(true);
     try {
-      const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
+      const messagesCollection = collection(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages');
       const messagesQuery = query(
         messagesCollection,
         orderBy('timestamp', 'desc'),
@@ -134,27 +123,27 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   };
 
   const handleSendMessage = async () => {
-    if (!serverID || !channelID) {
-      console.error('Server ID or Channel ID is not defined');
+    if (!friendId || !currentUser) {
+      console.error('Friend ID or current user is not defined');
       return;
     }
 
     if (newMessage.trim() === '' && !selectedFile) return;
-    const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
+    const messagesCollection = collection(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages');
     const timestamp = new Date();
     let fileUrl = '';
 
     if (selectedFile) {
-      const fileRef = ref(storage, `files/${serverID}/${channelID}/${selectedFile.name}`);
+      const fileRef = ref(storage, `files/${currentUser.uid}/${friendId}/${selectedFile.name}`);
       await uploadBytes(fileRef, selectedFile);
       fileUrl = await getDownloadURL(fileRef);
     }
 
     await addDoc(messagesCollection, {
-      user: currentUser?.displayName || 'Anonymous',
+      user: currentUser.displayName || 'Anonymous',
       message: fileUrl || newMessage,
       timestamp,
-      profilePicture: currentUser?.photoURL || defaultProfilePicture,
+      profilePicture: currentUser.photoURL || defaultProfilePicture,
     });
 
     setNewMessage('');
@@ -186,12 +175,12 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   };
 
   const handleEditMessage = async (id: string, newMessage: string) => {
-    if (!serverID || !channelID) {
-      console.error('Server ID or Channel ID is not defined');
+    if (!friendId || !currentUser) {
+      console.error('Friend ID or current user is not defined');
       return;
     }
 
-    const messageDoc = doc(db, 'Servers', serverID, 'Channels', channelID, 'Messages', id);
+    const messageDoc = doc(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages', id);
     await updateDoc(messageDoc, {
       message: newMessage,
       editedTimestamp: new Date(),
@@ -199,19 +188,14 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   };
 
   const handleDeleteMessage = async (id: string) => {
-    if (!serverID || !channelID) {
-      console.error('Server ID or Channel ID is not defined');
+    if (!friendId || !currentUser) {
+      console.error('Friend ID or current user is not defined');
       return;
     }
 
-    const messageDoc = doc(db, 'Servers', serverID, 'Channels', channelID, 'Messages', id);
+    const messageDoc = doc(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages', id);
     await deleteDoc(messageDoc);
     setShowDeleteModal({ id: '', visible: false });
-  };
-
-  const handleMentionSelect = (displayName: string) => {
-    setNewMessage(newMessage + `@${displayName} `);
-    setMentionVisible(false);
   };
 
   const handleSearch = async () => {
@@ -222,7 +206,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
     setLoading(true);
     try {
-      const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
+      const messagesCollection = collection(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages');
       const messageSnapshot = await getDocs(messagesCollection);
 
       const results: MessageData[] = [];
@@ -276,7 +260,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       <div className="border-b border-gray-600 flex px-6 py-2 items-center flex-none shadow-xl">
         <div className="flex flex-col">
           <h3 className="mb-1 font-bold text-xl text-gray-100">
-            <span className="text-gray-400">#</span> {channelName}
+            {friendDisplayName}
           </h3>
         </div>
         <div className="ml-auto flex items-center">
@@ -332,7 +316,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
               editedTime={msg.editedTimestamp ? new Date(msg.editedTimestamp).toLocaleTimeString() : undefined}
               onDelete={() => setShowDeleteModal({ id: msg.id, visible: true })}
               onEdit={(newMessage) => handleEditMessage(msg.id, newMessage)}
-              isMentioned={currentUser?.displayName && msg.message.includes(`@${currentUser.displayName}`) || msg.message.includes(`@everyone`)}
+              isMentioned={false} // No mentions in friend chat
             />
           ))
         )}
@@ -413,12 +397,9 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
           <input
             type="text"
             className="w-full px-4 bg-gray-600 text-white"
-            placeholder={`Message #${channelName}`}
+            placeholder={`Message @${friendDisplayName}`}
             value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              setMentionVisible(e.target.value.includes('@'));
-            }}
+            onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
           />
           <input
@@ -434,10 +415,9 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
             📤
           </span>
         </div>
-        {mentionVisible && <MentionsList members={mentionList} onSelect={handleMentionSelect} />}
       </div>
     </div>
   );
 };
 
-export default Chat;
+export default FriendChat;

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { auth } from "../firebaseConfig";
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '../provider/ToastProvider'; // Import the useToast hook
-import { toast, ToastContainer } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const Login: React.FC = () => {

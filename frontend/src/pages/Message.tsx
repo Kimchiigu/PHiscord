@@ -1,13 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface MessageProps {
+  id: string;
   src: string;
   user: string;
   message: string;
   time: string;
+  editedTime?: string;
+  onDelete: () => void;
+  onEdit: (newMessage: string) => void;
+  isMentioned: boolean;
 }
 
-const Message: React.FC<MessageProps> = ({ src, user, message, time }) => {
+const Message: React.FC<MessageProps> = ({ src, user, message, time, editedTime, onDelete, onEdit, isMentioned }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editMessage, setEditMessage] = useState(message);
+
   const isImage = (url: string) => /(\.jpeg|\.jpg|\.gif|\.png)/.test(url);
   const isVideo = (url: string) => /(\.mp4|\.webm|\.ogg)/.test(url);
   const isFile = (url: string) => /(\.xlsx|\.pdf|\.docx|\.doc|\.zip|\.rar)/.test(url);
@@ -55,25 +63,66 @@ const Message: React.FC<MessageProps> = ({ src, user, message, time }) => {
   };
 
   return (
-    <div className="border-b border-gray-600 py-3 flex items-start mb-4 text-sm text-left">
+    <div className={`border-b border-gray-600 py-3 flex items-start mb-4 text-sm text-left group relative ${isMentioned ? 'bg-indigo-700 rounded-xl' : ''}`}>
       <img src={src} className="cursor-pointer w-10 h-10 rounded-3xl mr-3" alt={`${user}'s avatar`} />
       <div className="flex-1 overflow-hidden">
         <div>
           <span className="font-bold text-red-300 cursor-pointer hover:underline mr-2">{user}</span>
           <span className="font-bold text-gray-400 text-xs">{time}</span>
         </div>
-        {messageType === 'image' ? (
-          <img src={message} alt="Uploaded content" className="max-w-full h-auto rounded mt-2" />
-        ) : messageType === 'video' ? (
-          <video controls className="max-w-full h-auto rounded mt-2">
-            <source src={message} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        ) : messageType === 'file' ? (
-          renderFilePreview(message)
+        {isEditing ? (
+          <input
+            type="text"
+            value={editMessage}
+            onChange={(e) => setEditMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                onEdit(editMessage);
+                setIsEditing(false);
+              } else if (e.key === 'Escape') {
+                setIsEditing(false);
+                setEditMessage(message);
+              }
+            }}
+            className="text-white leading-normal mt-2 bg-gray-800 rounded p-2 w-full"
+          />
         ) : (
-          <p className="text-white leading-normal mt-2">{message}</p>
+          <>
+            {messageType === 'image' ? (
+              <img src={message} alt="Uploaded content" className="max-w-full h-auto rounded mt-2" />
+            ) : messageType === 'video' ? (
+              <video controls className="max-w-full h-auto rounded mt-2">
+                <source src={message} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            ) : messageType === 'file' ? (
+              renderFilePreview(message)
+            ) : (
+              <p className="text-white leading-normal mt-2">{message}</p>
+            )}
+            {editedTime && (
+              <div className="text-gray-400 text-xs mt-1">
+                Edited on {editedTime}
+              </div>
+            )}
+          </>
         )}
+        <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 flex space-x-2">
+          {messageType === 'text' && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-blue-500 hover:text-blue-700"
+            >
+              ✎
+            </button>
+          )}
+          <button
+            onClick={onDelete}
+            className="text-red-500 hover:text-red-700"
+          >
+            ✖
+          </button>
+        </div>
       </div>
     </div>
   );
