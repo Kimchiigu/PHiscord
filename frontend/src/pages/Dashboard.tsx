@@ -12,6 +12,7 @@ const Dashboard: React.FC = () => {
   const [selectedServer, setSelectedServer] = useState<{ id: string; name: string; isOwner: boolean } | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<{ id: string; name: string } | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<{ userId: string; displayName: string } | null>(null);
+  const [dmSelected, setDmSelected] = useState<boolean>(false);
 
   return (
     <div className="font-sans antialiased h-screen flex w-full">
@@ -20,11 +21,13 @@ const Dashboard: React.FC = () => {
           setSelectedServer({ id, name, isOwner });
           setSelectedChannel(null); // Reset channel selection when server changes
           setSelectedFriend(null); // Reset friend selection when server changes
+          setDmSelected(false); // Reset DM selection when server changes
         }}
-        onFriendSelect={(friend) => {
-          setSelectedServer(null); // Reset server selection when friend is selected
-          setSelectedChannel(null); // Reset channel selection when friend is selected
-          setSelectedFriend(friend);
+        onDmSelect={() => {
+          setSelectedServer(null); // Reset server selection when DM is selected
+          setSelectedChannel(null); // Reset channel selection when DM is selected
+          setSelectedFriend(null); // Reset friend selection when DM is selected
+          setDmSelected(true); // Set DM selection when DM is selected
         }}
       />
       {selectedServer ? (
@@ -50,12 +53,20 @@ const Dashboard: React.FC = () => {
           )}
           <MemberList serverID={selectedServer.id} />
         </>
-      ) : selectedFriend ? (
-        <>
+      ) : dmSelected ? (
+        <div className="flex flex-1 overflow-hidden">
           <FriendList onFriendSelect={(friend) => setSelectedFriend(friend)} />
-          <FriendChat friendId={selectedFriend.userId} />
-          <FriendProfile friendId={selectedFriend.userId} />
-        </>
+          {selectedFriend ? (
+            <>
+              <FriendChat friendId={selectedFriend.userId} friendName={selectedFriend.displayName} />
+              <FriendProfile friendId={selectedFriend.userId} />
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-gray-700">
+              <h2 className="text-gray-400">Choose a friend to get started chatting</h2>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gray-700">
           <h2 className="text-gray-400">Choose a server or friend to get started</h2>

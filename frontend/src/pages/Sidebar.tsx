@@ -15,10 +15,10 @@ interface Server {
 
 interface SidebarProps {
   onServerSelect: (id: string, name: string, isOwner: boolean) => void;
-  onFriendSelect: (id: string, name: string) => void;
+  onDmSelect: () => void; // Add this prop
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onServerSelect, onFriendSelect }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onServerSelect, onDmSelect }) => {
   const { currentUser } = useAuth();
   const [servers, setServers] = useState<Server[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -69,8 +69,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onServerSelect, onFriendSelect }) => 
   return (
     <div className="bg-gray-900 text-purple-lighter flex-none w-24 p-6 hidden md:block">
       <div className="cursor-pointer mb-4 border-b border-gray-600 pb-2">
-        <div className="bg-white h-12 w-12 flex items-center justify-center text-black text-2xl font-semibold rounded-3xl mb-1 overflow-hidden" onClick={() => onFriendSelect('directMessages', 'Direct Messages')}>
-          <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Direct Messages" />
+        <div className="bg-white h-12 w-12 flex items-center justify-center text-black text-2xl font-semibold rounded-3xl mb-1 overflow-hidden" onClick={onDmSelect}>
+          {/* make the direct message in here */}
+          <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Main server" />
         </div>
       </div>
       {servers.length > 0 ? (
