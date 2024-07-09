@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from './firebaseConfig';
-import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, addDoc, query, where, deleteDoc } from 'firebase/firestore';
 import { useAuth } from './provider/AuthProvider';
 
 interface Member {
@@ -28,7 +28,9 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedMember, setSelectedMember] = useState<UserDetails | null>(null);
   const [isFriend, setIsFriend] = useState<boolean>(false);
+  const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [dmMessage, setDmMessage] = useState<string>('');
 
   const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
 
@@ -90,8 +92,13 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
         const friendsCollection = collection(db, 'Users', currentUser.uid, 'Friends');
         const friendDoc = await getDoc(doc(friendsCollection, userId));
         setIsFriend(friendDoc.exists());
+
+        const blockedCollection = collection(db, 'Users', currentUser.uid, 'Blocked');
+        const blockedDoc = await getDoc(doc(blockedCollection, userId));
+        setIsBlocked(blockedDoc.exists());
       } else {
         setIsFriend(false);
+        setIsBlocked(false);
       }
     }
   };
@@ -106,6 +113,82 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
     } catch (error) {
       console.error('Error adding friend:', error);
     }
+  };
+
+  const handleBlockUser = async (userId: string) => {
+    if (!currentUser) return;
+
+    try {
+      const blockedRef = doc(db, 'Users', currentUser.uid, 'Blocked', userId);
+      await setDoc(blockedRef, { userId });
+      setIsBlocked(true);
+    } catch (error) {
+      console.error('Error blocking user:', error);
+    }
+  };
+
+  const handleUnblockUser = async (userId: string) => {
+    if (!currentUser) return;
+
+    try {
+      const blockedRef = doc(db, 'Users', currentUser.uid, 'Blocked', userId);
+      await deleteDoc(blockedRef);
+      setIsBlocked(false);
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!currentUser || !selectedMember || !dmMessage.trim()) return;
+
+    const participants = [currentUser.uid, selectedMember.userId].sort();
+    const dmsQuery = query(
+      collection(db, 'DirectMessages'),
+      where('participants', 'array-contains', currentUser.uid)
+    );
+    const dmsSnapshot = await getDocs(dmsQuery);
+    let dmId = null;
+
+    for (const doc of dmsSnapshot.docs) {
+      const data = doc.data();
+      if (data.participants.includes(selectedMember.userId)) {
+        dmId = doc.id;
+        break;
+      }
+    }
+
+    if (!dmId) {
+      const newDmDoc = await addDoc(collection(db, 'DirectMessages'), {
+        participants,
+      });
+      dmId = newDmDoc.id;
+    }
+
+    const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
+    const timestamp = new Date();
+    await addDoc(messagesCollection, {
+      user: currentUser.displayName || 'Anonymous',
+      message: dmMessage,
+      timestamp,
+      profilePicture: currentUser.photoURL || defaultProfilePicture,
+    });
+
+    // Check if the target user is already a friend, if not add them as a guest
+    const friendsCollection = collection(db, 'Users', currentUser.uid, 'Friends');
+    const friendDoc = await getDoc(doc(friendsCollection, selectedMember.userId));
+    if (!friendDoc.exists()) {
+      await setDoc(doc(db, 'Users', currentUser.uid, 'Guests', selectedMember.userId), {
+        userId: selectedMember.userId,
+      });
+      await setDoc(doc(db, 'Users', selectedMember.userId, 'Guests', currentUser.uid), {
+        userId: currentUser.uid,
+      });
+    }
+
+    setDmMessage('');
+    setSelectedMember(null);
+    // Navigate to DM list or do something else here
   };
 
   return (
@@ -175,19 +258,40 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
                 <span className="text-gray-400">@{selectedMember.username}</span>
               </div>
             </div>
-            <div className="flex justify-end">
+            <div className="flex flex-col mb-4">
               {selectedMember.userId !== currentUser?.uid && (
-                isFriend ? (
-                  <button className="px-4 py-2 bg-green-500 text-white rounded" disabled>
-                    Already Friends
+                <>
+                  {isFriend ? (
+                    <button className="px-4 py-2 bg-green-500 text-white rounded mb-2" disabled>
+                      Already Friends
+                    </button>
+                  ) : (
+                    <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded mb-2" onClick={() => handleAddFriend(selectedMember.userId)}>
+                      Add Friend
+                    </button>
+                  )}
+                  {isBlocked ? (
+                    <button className="px-4 py-2 bg-red-500 hover:bg-red-700 text-white rounded mb-2" onClick={() => handleUnblockUser(selectedMember.userId)}>
+                      Unblock User
+                    </button>
+                  ) : (
+                    <button className="px-4 py-2 bg-red-500 hover:bg-red-700 text-white rounded mb-2" onClick={() => handleBlockUser(selectedMember.userId)}>
+                      Block User
+                    </button>
+                  )}
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 bg-gray-600 text-white rounded mb-2"
+                    placeholder="Send a message"
+                    value={dmMessage}
+                    onChange={(e) => setDmMessage(e.target.value)}
+                  />
+                  <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded" onClick={handleSendMessage}>
+                    Send Message
                   </button>
-                ) : (
-                  <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded" onClick={() => handleAddFriend(selectedMember.userId)}>
-                    Add Friend
-                  </button>
-                )
+                </>
               )}
-              <button className="ml-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded" onClick={() => setSelectedMember(null)}>
+              <button className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded mt-2" onClick={() => setSelectedMember(null)}>
                 Close
               </button>
             </div>

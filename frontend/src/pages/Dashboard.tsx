@@ -1,3 +1,4 @@
+// Dashboard.tsx
 import React, { useState } from 'react';
 import '../App.css';
 import Sidebar from './Sidebar';
@@ -7,12 +8,15 @@ import Chat from './Chat';
 import FriendList from './friend/FriendList';
 import FriendChat from './friend/FriendChat';
 import FriendProfile from './friend/FriendProfile'; // Assuming this component exists
+import FriendCategory from './friend/FriendCategory';
 
 const Dashboard: React.FC = () => {
   const [selectedServer, setSelectedServer] = useState<{ id: string; name: string; isOwner: boolean } | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<{ id: string; name: string } | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<{ userId: string; displayName: string } | null>(null);
   const [dmSelected, setDmSelected] = useState<boolean>(false);
+  const [selectedTab, setSelectedTab] = useState<'friends' | 'online' | 'all' | 'pending' | 'blocked' | 'addFriend'>('friends');
+  const [categorySelected, setCategorySelected] = useState<boolean>(false); // New state for category selection
 
   return (
     <div className="font-sans antialiased h-screen flex w-full">
@@ -22,12 +26,14 @@ const Dashboard: React.FC = () => {
           setSelectedChannel(null); // Reset channel selection when server changes
           setSelectedFriend(null); // Reset friend selection when server changes
           setDmSelected(false); // Reset DM selection when server changes
+          setCategorySelected(false); // Reset category selection when server changes
         }}
         onDmSelect={() => {
           setSelectedServer(null); // Reset server selection when DM is selected
           setSelectedChannel(null); // Reset channel selection when DM is selected
           setSelectedFriend(null); // Reset friend selection when DM is selected
           setDmSelected(true); // Set DM selection when DM is selected
+          setCategorySelected(false); // Reset category selection when DM is selected
         }}
       />
       {selectedServer ? (
@@ -55,8 +61,13 @@ const Dashboard: React.FC = () => {
         </>
       ) : dmSelected ? (
         <div className="flex flex-1 overflow-hidden">
-          <FriendList onFriendSelect={(friend) => setSelectedFriend(friend)} />
-          {selectedFriend ? (
+          <FriendList 
+            onFriendSelect={(friend) => setSelectedFriend(friend)} 
+            onCategorySelect={() => setCategorySelected(true)} // Handle category selection
+          />
+          {categorySelected ? (
+            <FriendCategory selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+          ) : selectedFriend ? (
             <>
               <FriendChat friendId={selectedFriend.userId} friendName={selectedFriend.displayName} />
               <FriendProfile friendId={selectedFriend.userId} />

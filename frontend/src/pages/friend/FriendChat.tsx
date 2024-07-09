@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { db, storage } from '../firebaseConfig';
-import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../provider/AuthProvider';
 import Message from '../Message';
@@ -27,6 +27,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   const [searchResults, setSearchResults] = useState<MessageData[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [friendDisplayName, setFriendDisplayName] = useState<string>('');
+  const [dmId, setDmId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
@@ -41,10 +42,45 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
       return;
     }
 
+    const fetchDmId = async () => {
+      try {
+        const dmsQuery = query(
+          collection(db, 'DirectMessages'),
+          where('participants', 'array-contains', currentUser.uid)
+        );
+        const dmsSnapshot = await getDocs(dmsQuery);
+        let dmFound = false;
+
+        for (const doc of dmsSnapshot.docs) {
+          const data = doc.data();
+          if (data.participants.includes(friendId)) {
+            setDmId(doc.id);
+            dmFound = true;
+            break;
+          }
+        }
+
+        if (!dmFound) {
+          const newDmDoc = await addDoc(collection(db, 'DirectMessages'), {
+            participants: [currentUser.uid, friendId],
+          });
+          setDmId(newDmDoc.id);
+        }
+      } catch (error) {
+        console.error('Error fetching DM ID:', error);
+      }
+    };
+
+    fetchDmId();
+  }, [friendId, currentUser]);
+
+  useEffect(() => {
+    if (!dmId) return;
+
     const fetchMessages = () => {
       setLoading(true);
       try {
-        const messagesCollection = collection(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages');
+        const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
         const messagesQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(20));
 
         onSnapshot(messagesQuery, (snapshot) => {
@@ -66,7 +102,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
     };
 
     fetchMessages();
-  }, [friendId, currentUser]);
+  }, [dmId]);
 
   useEffect(() => {
     const fetchFriendDisplayName = async () => {
@@ -87,11 +123,11 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   }, [friendId]);
 
   const fetchOlderMessages = async () => {
-    if (!lastVisible) return;
+    if (!lastVisible || !dmId) return;
 
     setLoading(true);
     try {
-      const messagesCollection = collection(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages');
+      const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
       const messagesQuery = query(
         messagesCollection,
         orderBy('timestamp', 'desc'),
@@ -123,18 +159,18 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   };
 
   const handleSendMessage = async () => {
-    if (!friendId || !currentUser) {
-      console.error('Friend ID or current user is not defined');
+    if (!dmId || !currentUser) {
+      console.error('DM ID or current user is not defined');
       return;
     }
 
     if (newMessage.trim() === '' && !selectedFile) return;
-    const messagesCollection = collection(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages');
+    const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
     const timestamp = new Date();
     let fileUrl = '';
 
     if (selectedFile) {
-      const fileRef = ref(storage, `files/${currentUser.uid}/${friendId}/${selectedFile.name}`);
+      const fileRef = ref(storage, `files/${dmId}/${selectedFile.name}`);
       await uploadBytes(fileRef, selectedFile);
       fileUrl = await getDownloadURL(fileRef);
     }
@@ -175,12 +211,12 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   };
 
   const handleEditMessage = async (id: string, newMessage: string) => {
-    if (!friendId || !currentUser) {
-      console.error('Friend ID or current user is not defined');
+    if (!dmId || !currentUser) {
+      console.error('DM ID or current user is not defined');
       return;
     }
 
-    const messageDoc = doc(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages', id);
+    const messageDoc = doc(db, 'DirectMessages', dmId, 'Messages', id);
     await updateDoc(messageDoc, {
       message: newMessage,
       editedTimestamp: new Date(),
@@ -188,12 +224,12 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   };
 
   const handleDeleteMessage = async (id: string) => {
-    if (!friendId || !currentUser) {
-      console.error('Friend ID or current user is not defined');
+    if (!dmId || !currentUser) {
+      console.error('DM ID or current user is not defined');
       return;
     }
 
-    const messageDoc = doc(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages', id);
+    const messageDoc = doc(db, 'DirectMessages', dmId, 'Messages', id);
     await deleteDoc(messageDoc);
     setShowDeleteModal({ id: '', visible: false });
   };
@@ -206,7 +242,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
 
     setLoading(true);
     try {
-      const messagesCollection = collection(db, 'Users', currentUser.uid, 'Friends', friendId, 'Messages');
+      const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
       const messageSnapshot = await getDocs(messagesCollection);
 
       const results: MessageData[] = [];
@@ -249,8 +285,6 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      console.log("Height: " + chatContainerRef.current.scrollHeight);
-      console.log(chatContainerRef.current.scrollTop);
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   };
