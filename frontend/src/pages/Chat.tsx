@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from './provider/AuthProvider';
 import Message from './Message';
 import MentionsList from './MentionsList';
+import Filter from 'bad-words';
 
 interface MessageData {
   id: string;
@@ -37,6 +38,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   const [searchResults, setSearchResults] = useState<MessageData[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [currentUserNickname, setCurrentUserNickname] = useState<string | null>(null);
+  const [nsfw, setNsfw] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
@@ -51,19 +53,28 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       return;
     }
 
-    const fetchMessages = () => {
+    const fetchMessages = async () => {
       setLoading(true);
       try {
+        const channelDoc = await getDoc(doc(db, 'Servers', serverID, 'Channels', channelID));
+        if (channelDoc.exists()) {
+          setNsfw(channelDoc.data().nsfw);
+        }
+
         const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
         const messagesQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(20));
 
         onSnapshot(messagesQuery, (snapshot) => {
+          const filter = new Filter();
+          console.log(nsfw)
           const messagesList = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
+            message: nsfw ? doc.data().message : filter.clean(doc.data().message), 
             timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date(),
             editedTimestamp: doc.data().editedTimestamp ? doc.data().editedTimestamp.toDate() : undefined
           })) as MessageData[];
+
           setMessages(messagesList.reverse());
           setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
           setLoading(false);
@@ -76,7 +87,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
     };
 
     fetchMessages();
-  }, [serverID, channelID]);
+  }, [serverID, channelID, nsfw]);
 
   useEffect(() => {
     const fetchMentions = async () => {
@@ -142,9 +153,11 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       );
 
       const messageSnapshot = await getDocs(messagesQuery);
+      const filter = new Filter();
       const olderMessages = messageSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
+        message: nsfw ? doc.data().message : filter.clean(doc.data().message), 
         timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date(),
         editedTimestamp: doc.data().editedTimestamp ? doc.data().editedTimestamp.toDate() : undefined
       })) as MessageData[];
@@ -310,8 +323,6 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      console.log("Height: " + chatContainerRef.current.scrollHeight);
-      console.log(chatContainerRef.current.scrollTop);
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   };
@@ -452,13 +463,13 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
           <span className="text-3xl text-grey border-r-4 border-gray-600 bg-gray-600 p-2 cursor-pointer" onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}>
             😊
           </span>
-          {emojiTrayVisible && (
-            <div className="absolute bottom-16 bg-gray-600 p-2 rounded shadow-lg grid grid-cols-5 gap-2">
-              {emojis.map(emoji => (
-                <span key={emoji} className="text-2xl cursor-pointer" onClick={() => handleSelectEmoji(emoji)}>{emoji}</span>
-              ))}
-            </div>
-          )}
+            {emojiTrayVisible && (
+              <div className="absolute bottom-16 bg-gray-600 p-2 rounded shadow-lg grid grid-cols-5 gap-2">
+                {emojis.map(emoji => (
+                  <span key={emoji} className="text-2xl cursor-pointer" onClick={() => handleSelectEmoji(emoji)}>{emoji}</span>
+                ))}
+              </div>
+            )}
           <input
             type="text"
             className="w-full px-4 bg-gray-600 text-white"
@@ -490,3 +501,4 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 };
 
 export default Chat;
+
