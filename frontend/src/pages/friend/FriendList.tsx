@@ -164,8 +164,8 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
             )}
           </>
         )}
+        <ProfileBar /> 
       </div>
-      <ProfileBar />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { db, storage } from './firebaseConfig';
-import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from './provider/AuthProvider';
 import Message from './Message';
@@ -15,6 +15,13 @@ interface MessageData {
   editedTimestamp?: any;
 }
 
+interface Member {
+  id: string;
+  displayName: string;
+  profilePicture: string;
+  serverNickname?: string;
+}
+
 const Chat: React.FC<{ serverID: string; channelID: string; channelName: string }> = ({ serverID, channelID, channelName }) => {
   const { currentUser } = useAuth();
   const [messages, setMessages] = useState<MessageData[]>([]);
@@ -24,11 +31,12 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<{ id: string; visible: boolean }>({ id: '', visible: false });
-  const [mentionList, setMentionList] = useState<{ id: string; displayName: string; profilePicture: string }[]>([]);
+  const [mentionList, setMentionList] = useState<Member[]>([]);
   const [mentionVisible, setMentionVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MessageData[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
+  const [currentUserNickname, setCurrentUserNickname] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
@@ -75,17 +83,22 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       setLoading(true);
       const membersCollection = collection(db, 'Servers', serverID, 'Members');
       const memberSnapshot = await getDocs(membersCollection);
-      const membersList: { id: string; displayName: string; profilePicture: string }[] = [];
+      const membersList: Member[] = [];
 
       for (const memberDoc of memberSnapshot.docs) {
         const memberData = memberDoc.data() as { userId: string; role: string };
         const userDoc = await getDoc(doc(db, 'Users', memberData.userId));
         if (userDoc.exists()) {
           const userData = userDoc.data();
+          const nicknameDoc = await getDocs(
+            query(collection(db, 'Users', memberData.userId, 'Nicknames'), where('serverId', '==', serverID))
+          );
+          const nicknameData = nicknameDoc.docs[0]?.data();
           const member = {
             id: memberData.userId,
             displayName: userData.displayName,
             profilePicture: userData.profilePicture || defaultProfilePicture,
+            serverNickname: nicknameData?.serverNickname
           };
           membersList.push(member);
         }
@@ -96,6 +109,24 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
     fetchMentions();
   }, [serverID]);
+
+  useEffect(() => {
+    const fetchCurrentUserNickname = async () => {
+      if (currentUser) {
+        const nicknameQuery = query(
+          collection(db, 'Users', currentUser.uid, 'Nicknames'),
+          where('serverId', '==', serverID)
+        );
+        const nicknameSnapshot = await getDocs(nicknameQuery);
+        if (!nicknameSnapshot.empty) {
+          const nicknameData = nicknameSnapshot.docs[0].data();
+          setCurrentUserNickname(nicknameData.serverNickname || null);
+        }
+      }
+    };
+
+    fetchCurrentUserNickname();
+  }, [currentUser, serverID]);
 
   const fetchOlderMessages = async () => {
     if (!lastVisible) return;
@@ -150,11 +181,25 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       fileUrl = await getDownloadURL(fileRef);
     }
 
+    // Fetch server nickname
+    let serverNickname = currentUser?.displayName || 'Anonymous';
+    if (currentUser) {
+      const nicknameQuery = query(
+        collection(db, 'Users', currentUser.uid, 'Nicknames'),
+        where('serverId', '==', serverID)
+      );
+      const nicknameSnapshot = await getDocs(nicknameQuery);
+      if (!nicknameSnapshot.empty) {
+        const nicknameData = nicknameSnapshot.docs[0].data();
+        serverNickname = nicknameData.serverNickname || serverNickname;
+      }
+    }
+
     await addDoc(messagesCollection, {
-      user: currentUser?.displayName || 'Anonymous',
+      user: serverNickname,
       message: fileUrl || newMessage,
       timestamp,
-      profilePicture: currentUser?.photoURL || defaultProfilePicture,
+      profilePicture: currentUser?.profilePicture || defaultProfilePicture,
     });
 
     setNewMessage('');
@@ -332,7 +377,11 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
               editedTime={msg.editedTimestamp ? new Date(msg.editedTimestamp).toLocaleTimeString() : undefined}
               onDelete={() => setShowDeleteModal({ id: msg.id, visible: true })}
               onEdit={(newMessage) => handleEditMessage(msg.id, newMessage)}
-              isMentioned={currentUser?.displayName && msg.message.includes(`@${currentUser.displayName}`) || msg.message.includes(`@everyone`)}
+              isMentioned={
+                (currentUserNickname && msg.message.includes(`@${currentUserNickname}`)) ||
+                (currentUser?.displayName && msg.message.includes(`@${currentUser.displayName}`)) ||
+                msg.message.includes(`@everyone`)
+              }
             />
           ))
         )}

@@ -3,6 +3,8 @@ import { db } from '../firebaseConfig';
 import { collection, getDocs, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import ProfileBar from '../ProfileBar';
 import CreateChannelModal from './CreateChannelModal';
+import EditChannelModal from './EditChannelModal';
+import DeleteChannelModal from './DeleteChannelModal';
 import { useAuth } from '../provider/AuthProvider';
 import InvitePeopleModal from './InvitePeopleModal';
 import DeleteServerModal from './DeleteServerModal';
@@ -14,6 +16,7 @@ interface Channel {
   id: string;
   name: string;
   type: 'text' | 'voice';
+  nsfw?: boolean;
 }
 
 interface ChannelListProps {
@@ -22,20 +25,20 @@ interface ChannelListProps {
   serverImage: string;
   isOwner: boolean;
   isAdmin: boolean;
-  onChannelSelect: (id: string, name: string) => void;
+  onChannelSelect: (id: string, name: string, nsfw: boolean) => void;
 }
 
 const ChannelList: React.FC<ChannelListProps> = ({
   serverID,
   serverName,
   serverImage,
-  isOwner,
-  isAdmin,
   onChannelSelect,
 }) => {
   const { currentUser } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
+  const [showEditChannelModal, setShowEditChannelModal] = useState<{ show: boolean; channelID: string }>({ show: false, channelID: '' });
+  const [showDeleteChannelModal, setShowDeleteChannelModal] = useState<{ show: boolean; channelID: string; channelName: string }>({ show: false, channelID: '', channelName: '' });
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -82,6 +85,26 @@ const ChannelList: React.FC<ChannelListProps> = ({
   }, [serverID, serverName, serverImage, currentUser]);
 
   const handleChannelCreated = async () => {
+    const channelsCollection = collection(db, 'Servers', serverID, 'Channels');
+    const channelSnapshot = await getDocs(channelsCollection);
+    const channelList = channelSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Channel[];
+    setChannels(channelList);
+  };
+
+  const handleChannelUpdated = async () => {
+    const channelsCollection = collection(db, 'Servers', serverID, 'Channels');
+    const channelSnapshot = await getDocs(channelsCollection);
+    const channelList = channelSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Channel[];
+    setChannels(channelList);
+  };
+
+  const handleChannelDeleted = async () => {
     const channelsCollection = collection(db, 'Servers', serverID, 'Channels');
     const channelSnapshot = await getDocs(channelsCollection);
     const channelList = channelSnapshot.docs.map((doc) => ({
@@ -219,10 +242,40 @@ const ChannelList: React.FC<ChannelListProps> = ({
           .map((channel) => (
             <div
               key={channel.id}
-              className="bg-teal-dark cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left"
-              onClick={() => onChannelSelect(channel.id, channel.name)}
+              className="group relative bg-teal-dark cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left flex justify-between items-center"
+              onClick={() => onChannelSelect(channel.id, channel.name, channel.nsfw || false)}
             >
-              # {channel.name}
+              <span># {channel.name}</span>
+              {(currentRole === 'owner' || currentRole === 'admin') && (
+                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100">
+                  <svg
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowEditChannelModal({ show: true, channelID: channel.id });
+                    }}
+                    className="fill-current h-4 w-4 cursor-pointer"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      d="M12.586 2.586a2 2 0 00-2.828 0l-7 7a2 2 0 000 2.828l7 7a2 2 0 002.828 0l7-7a2 2 0 000-2.828l-7-7zm1.414 9.414L11 14.586l-3-3 3-3 3 3z"
+                    />
+                  </svg>
+                  <svg
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteChannelModal({ show: true, channelID: channel.id, channelName: channel.name });
+                    }}
+                    className="fill-current h-4 w-4 cursor-pointer"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      d="M6 2a2 2 0 00-2 2v1H3a1 1 0 000 2h1v9a2 2 0 002 2h8a2 2 0 002-2V7h1a1 1 0 000-2h-1V4a2 2 0 00-2-2H6zm2 5a1 1 0 012 0v7a1 1 0 01-2 0V7zm4 0a1 1 0 012 0v7a1 1 0 01-2 0V7z"
+                    />
+                  </svg>
+                </div>
+              )}
             </div>
           ))}
       </div>
@@ -249,10 +302,40 @@ const ChannelList: React.FC<ChannelListProps> = ({
           .map((channel) => (
             <div
               key={channel.id}
-              className="bg-teal-dark hover:bg-gray-800 cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left"
-              onClick={() => onChannelSelect(channel.id, channel.name)}
+              className="group relative bg-teal-dark hover:bg-gray-800 cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left flex justify-between items-center"
+              onClick={() => onChannelSelect(channel.id, channel.name, channel.nsfw || false)}
             >
-              # {channel.name}
+              <span># {channel.name}</span>
+              {(currentRole === 'owner' || currentRole === 'admin') && (
+                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100">
+                  <svg
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowEditChannelModal({ show: true, channelID: channel.id });
+                    }}
+                    className="fill-current h-4 w-4 cursor-pointer"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      d="M12.586 2.586a2 2 0 00-2.828 0l-7 7a2 2 0 000 2.828l7 7a2 2 0 002.828 0l7-7a2 2 0 000-2.828l-7-7zm1.414 9.414L11 14.586l-3-3 3-3 3 3z"
+                    />
+                  </svg>
+                  <svg
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteChannelModal({ show: true, channelID: channel.id, channelName: channel.name });
+                    }}
+                    className="fill-current h-4 w-4 cursor-pointer"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      d="M6 2a2 2 0 00-2 2v1H3a1 1 0 000 2h1v9a2 2 0 002 2h8a2 2 0 002-2V7h1a1 1 0 000-2h-1V4a2 2 0 00-2-2H6zm2 5a1 1 0 012 0v7a1 1 0 01-2 0V7zm4 0a1 1 0 012 0v7a1 1 0 01-2 0V7z"
+                    />
+                  </svg>
+                </div>
+              )}
             </div>
           ))}
       </div>
@@ -263,6 +346,27 @@ const ChannelList: React.FC<ChannelListProps> = ({
           serverID={serverID}
           onClose={() => setShowCreateChannelModal(false)}
           onChannelCreated={handleChannelCreated}
+        />
+      )}
+
+      {showEditChannelModal.show && (
+        <EditChannelModal
+          show={showEditChannelModal.show}
+          serverID={serverID}
+          channelID={showEditChannelModal.channelID}
+          onClose={() => setShowEditChannelModal({ show: false, channelID: '' })}
+          onChannelUpdated={handleChannelUpdated}
+        />
+      )}
+
+      {showDeleteChannelModal.show && (
+        <DeleteChannelModal
+          show={showDeleteChannelModal.show}
+          serverID={serverID}
+          channelID={showDeleteChannelModal.channelID}
+          channelName={showDeleteChannelModal.channelName}
+          onClose={() => setShowDeleteChannelModal({ show: false, channelID: '', channelName: '' })}
+          onChannelDeleted={handleChannelDeleted}
         />
       )}
 

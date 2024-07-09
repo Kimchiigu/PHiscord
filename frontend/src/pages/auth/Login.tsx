@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from "../firebaseConfig";
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 import { useToast } from '../provider/ToastProvider'; // Import the useToast hook
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -29,6 +31,12 @@ const Login: React.FC = () => {
     return newErrors;
   };
 
+  const setOnlineStatus = async (uid: string, isOnline: boolean) => {
+    const userDoc = doc(db, 'Users', uid);
+    await updateDoc(userDoc, { isOnline });
+    console.log(`User ${uid} status set to ${isOnline ? 'online' : 'offline'}`);
+  };
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors = validateForm();
@@ -39,6 +47,7 @@ const Login: React.FC = () => {
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         console.log(userCredential);
+        await setOnlineStatus(userCredential.user.uid, true); // Set user online status
         showToast('Login successful!', 'success'); // Show success toast
         navigate('/dashboard');
       } catch (error) {

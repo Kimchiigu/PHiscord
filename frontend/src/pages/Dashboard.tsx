@@ -1,4 +1,3 @@
-// Dashboard.tsx
 import React, { useState } from 'react';
 import '../App.css';
 import Sidebar from './Sidebar';
@@ -7,8 +6,9 @@ import MemberList from './MemberList';
 import Chat from './Chat';
 import FriendList from './friend/FriendList';
 import FriendChat from './friend/FriendChat';
-import FriendProfile from './friend/FriendProfile'; // Assuming this component exists
+import FriendProfile from './friend/FriendProfile';
 import FriendCategory from './friend/FriendCategory';
+import ProfileBar from './ProfileBar';
 
 const Dashboard: React.FC = () => {
   const [selectedServer, setSelectedServer] = useState<{ id: string; name: string; isOwner: boolean } | null>(null);
@@ -16,24 +16,24 @@ const Dashboard: React.FC = () => {
   const [selectedFriend, setSelectedFriend] = useState<{ userId: string; displayName: string } | null>(null);
   const [dmSelected, setDmSelected] = useState<boolean>(false);
   const [selectedTab, setSelectedTab] = useState<'friends' | 'online' | 'all' | 'pending' | 'blocked' | 'addFriend'>('friends');
-  const [categorySelected, setCategorySelected] = useState<boolean>(false); // New state for category selection
+  const [categorySelected, setCategorySelected] = useState<boolean>(false);
 
   return (
     <div className="font-sans antialiased h-screen flex w-full">
       <Sidebar
         onServerSelect={(id, name, isOwner) => {
           setSelectedServer({ id, name, isOwner });
-          setSelectedChannel(null); // Reset channel selection when server changes
-          setSelectedFriend(null); // Reset friend selection when server changes
-          setDmSelected(false); // Reset DM selection when server changes
-          setCategorySelected(false); // Reset category selection when server changes
+          setSelectedChannel(null);
+          setSelectedFriend(null);
+          setDmSelected(false);
+          setCategorySelected(false);
         }}
         onDmSelect={() => {
-          setSelectedServer(null); // Reset server selection when DM is selected
-          setSelectedChannel(null); // Reset channel selection when DM is selected
-          setSelectedFriend(null); // Reset friend selection when DM is selected
-          setDmSelected(true); // Set DM selection when DM is selected
-          setCategorySelected(false); // Reset category selection when DM is selected
+          setSelectedServer(null);
+          setSelectedChannel(null);
+          setSelectedFriend(null);
+          setDmSelected(true);
+          setCategorySelected(false);
         }}
       />
       {selectedServer ? (
@@ -45,13 +45,11 @@ const Dashboard: React.FC = () => {
             onChannelSelect={(id, name) => setSelectedChannel({ id, name })}
           />
           {selectedChannel ? (
-            <>
-              <Chat
-                serverID={selectedServer.id}
-                channelID={selectedChannel.id}
-                channelName={selectedChannel.name}
-              />
-            </>
+            <Chat
+              serverID={selectedServer.id}
+              channelID={selectedChannel.id}
+              channelName={selectedChannel.name}
+            />
           ) : (
             <div className="flex-1 flex items-center justify-center bg-gray-700">
               <h2 className="text-gray-400">Select a channel to start chatting</h2>
@@ -63,7 +61,7 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-1 overflow-hidden">
           <FriendList 
             onFriendSelect={(friend) => setSelectedFriend(friend)} 
-            onCategorySelect={() => setCategorySelected(true)} // Handle category selection
+            onCategorySelect={() => setCategorySelected(true)}
           />
           {categorySelected ? (
             <FriendCategory selectedTab={selectedTab} setSelectedTab={setSelectedTab} />

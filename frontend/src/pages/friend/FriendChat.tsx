@@ -179,7 +179,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
       user: currentUser.displayName || 'Anonymous',
       message: fileUrl || newMessage,
       timestamp,
-      profilePicture: currentUser.photoURL || defaultProfilePicture,
+      profilePicture: currentUser.profilePicture || defaultProfilePicture,
     });
 
     setNewMessage('');

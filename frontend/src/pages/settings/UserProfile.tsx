@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../provider/AuthProvider';
-import { db } from '../firebaseConfig';
+import { db, storage } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 import Modal from './Modal';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const UserProfile = () => {
   const { currentUser, refreshCurrentUser } = useAuth();
@@ -10,13 +13,15 @@ const UserProfile = () => {
 
   const [showDisplayNameModal, setShowDisplayNameModal] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
-  const [showPhoneNumberModal, setShowPhoneNumberModal] = useState(false);
+  const [showDOBModal, setShowDOBModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [showProfilePictureModal, setShowProfilePictureModal] = useState(false);
 
   const [newDisplayName, setNewDisplayName] = useState(currentUser?.displayName || '');
   const [newUsername, setNewUsername] = useState(currentUser?.username || '');
-  const [newPhoneNumber, setNewPhoneNumber] = useState('');
-  const [newProfilePicture, setNewProfilePicture] = useState('');
+  const [newDOB, setNewDOB] = useState<Date | null>(null);
+  const [newStatus, setNewStatus] = useState(currentUser?.customStatus || '');
+  const [newProfilePicture, setNewProfilePicture] = useState<File | null>(null);
 
   const toggleEmailVisibility = () => {
     setEmailRevealed(!emailRevealed);
@@ -30,12 +35,34 @@ const UserProfile = () => {
     return `${censoredLocalPart}@${domain}`;
   };
 
-  const handleUpdateProfile = async (field: string, value: string) => {
+  const handleUpdateProfile = async (field: string, value: any) => {
     if (currentUser) {
       const userDoc = doc(db, 'Users', currentUser.uid);
       await updateDoc(userDoc, { [field]: value });
       refreshCurrentUser();
     }
+  };
+
+  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]){
+      setNewProfilePicture(e.target.files[0]);
+    }
+  };
+
+  const handleProfilePictureUpload = async () => {
+    if(currentUser && newProfilePicture){
+      const storageRef = ref(storage, `profilePictures/${currentUser.uid}`);
+      await uploadBytes(storageRef, newProfilePicture);
+      const downloadURL = await getDownloadURL(storageRef);
+      await handleUpdateProfile('profilePicture', downloadURL);
+      setShowProfilePictureModal(false);
+      setNewProfilePicture(null);
+    };
+  }
+
+  const formatDOB = (dob: { date: number, month: number, year: number }) => {
+    const date = new Date(dob.year, dob.month - 1, dob.date);
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   return (
@@ -53,10 +80,10 @@ const UserProfile = () => {
               <p className="text-lg font-bold text-white text-left">{currentUser?.username}</p>
               <div className="flex items-center mt-1">
                 <div className="bg-gray-700 px-2 py-1 rounded-full text-sm font-medium flex items-center">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className={currentUser?.isOnline ? "w-4 h-4 text-green-500" : "w-4 h-4 text-red-500"} fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11H9v4h2V7zm0 6H9v2h2v-2z" />
                   </svg>
-                  <span className="ml-2 mr-2 text-white">Online</span>
+                  <span className="ml-2 mr-2 text-white">{currentUser?.isOnline ? 'Online' : 'Offline'}</span>
                 </div>
               </div>
             </div>
@@ -105,18 +132,29 @@ const UserProfile = () => {
                   {emailRevealed ? 'Hide' : 'Reveal'}
                 </span>
               </p>
-              <button className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-gray-300">Edit</button>
             </div>
           </div>
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-gray-400 text-left">PHONE NUMBER</h3>
+            <h3 className="text-sm font-semibold text-gray-400 text-left">DATE OF BIRTH</h3>
             <div className="flex justify-between items-center mt-1">
-              <p>{currentUser?.phoneNumber || "You haven't added a phone number yet."}</p>
+              <p>{currentUser?.dob ? formatDOB(currentUser.dob) : "You haven't added DOB"}</p>
               <button
                 className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-gray-300"
-                onClick={() => setShowPhoneNumberModal(true)}
+                onClick={() => setShowDOBModal(true)}
               >
-                Add
+                Edit
+              </button>
+            </div>
+          </div>
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-400 text-left">CUSTOM STATUS</h3>
+            <div className="flex justify-between items-center mt-1">
+              <p>{currentUser?.customStatus || (currentUser?.isOnline ? "Online" : "Offline")}</p>
+              <button
+                className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-gray-300"
+                onClick={() => setShowStatusModal(true)}
+              >
+                Edit
               </button>
             </div>
           </div>
@@ -162,19 +200,41 @@ const UserProfile = () => {
         </button>
       </Modal>
 
-      <Modal show={showPhoneNumberModal} onClose={() => setShowPhoneNumberModal(false)}>
-        <h3 className="text-lg font-semibold mb-4">Add Phone Number</h3>
-        <input
-          type="text"
-          value={newPhoneNumber}
-          onChange={(e) => setNewPhoneNumber(e.target.value)}
+      <Modal show={showDOBModal} onClose={() => setShowDOBModal(false)}>
+        <h3 className="text-lg font-semibold mb-4">Add Date of Birth</h3>
+        <DatePicker
+          selected={newDOB}
+          onChange={(date) => setNewDOB(date)}
+          dateFormat="dd/MM/yyyy"
           className="w-full p-2 mb-4 border border-gray-300 rounded"
         />
         <button
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => {
-            handleUpdateProfile('phoneNumber', newPhoneNumber);
-            setShowPhoneNumberModal(false);
+            if (newDOB) {
+              const dob = { date: newDOB.getDate(), month: newDOB.getMonth() + 1, year: newDOB.getFullYear() };
+              handleUpdateProfile('dob', dob);
+            }
+            setShowDOBModal(false);
+          }}
+        >
+          Save
+        </button>
+      </Modal>
+
+      <Modal show={showStatusModal} onClose={() => setShowStatusModal(false)}>
+        <h3 className="text-lg font-semibold mb-4">Edit Custom Status</h3>
+        <input
+          type="text"
+          value={newStatus}
+          onChange={(e) => setNewStatus(e.target.value)}
+          className="w-full p-2 mb-4 border border-gray-300 rounded"
+        />
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => {
+            handleUpdateProfile('customStatus', newStatus);
+            setShowStatusModal(false);
           }}
         >
           Save
@@ -182,23 +242,19 @@ const UserProfile = () => {
       </Modal>
 
       <Modal show={showProfilePictureModal} onClose={() => setShowProfilePictureModal(false)}>
-        <h3 className="text-lg font-semibold mb-4">Edit Profile Picture</h3>
-        <input
-          type="text"
-          value={newProfilePicture}
-          onChange={(e) => setNewProfilePicture(e.target.value)}
-          className="w-full p-2 mb-4 border border-gray-300 rounded"
-          placeholder="Enter image URL"
-        />
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          onClick={() => {
-            handleUpdateProfile('profilePicture', newProfilePicture);
-            setShowProfilePictureModal(false);
-          }}
-        >
-          Save
-        </button>
+          <h3 className='text-lg font-semibold mb-4'>Edit Profile Picture</h3>
+          <input 
+            type="file"
+            accept='image/*' 
+            onChange={handleProfilePictureChange}
+            className='w-full p-2 mb-4 border border-gray-300 rounded'
+          />
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={handleProfilePictureUpload}
+          >
+            Save
+          </button>
       </Modal>
     </div>
   );

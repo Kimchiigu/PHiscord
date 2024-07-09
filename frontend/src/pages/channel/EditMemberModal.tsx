@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, getDocs, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, getDoc, query, where } from 'firebase/firestore';
 import { useAuth } from '../provider/AuthProvider';
 
 interface EditMemberModalProps {
@@ -15,6 +15,7 @@ interface Member {
   displayName: string;
   profileImage: string;
   role: 'owner' | 'admin' | 'member';
+  serverNickname?: string;
 }
 
 interface UserData {
@@ -37,12 +38,19 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ show, serverID, onClo
           const memberData = memberDoc.data();
           const userDoc = await getDoc(doc(db, 'Users', memberData.userId));
           const userData = userDoc.data() as UserData | undefined;
+          
+          // Fetch serverNickname
+          const nicknameQuery = query(collection(db, 'Users', memberData.userId, 'Nicknames'), where('serverId', '==', serverID));
+          const nicknameSnapshot = await getDocs(nicknameQuery);
+          const serverNickname = nicknameSnapshot.docs[0]?.data()?.serverNickname || '';
+          
           return {
             id: memberDoc.id,
             userId: memberData.userId,
             displayName: userData?.displayName || '',
-            profileImage: userData?.profileImage || '',
+            profileImage: userData?.profileImage || 'https://cdn.discordapp.com/embed/avatars/0.png',
             role: memberData.role,
+            serverNickname: serverNickname,
           };
         })
       );
@@ -101,12 +109,19 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ show, serverID, onClo
         const memberData = memberDoc.data();
         const userDoc = await getDoc(doc(db, 'Users', memberData.userId));
         const userData = userDoc.data() as UserData | undefined;
+        
+        // Fetch serverNickname
+        const nicknameQuery = query(collection(db, 'Users', memberData.userId, 'Nicknames'), where('serverId', '==', serverID));
+        const nicknameSnapshot = await getDocs(nicknameQuery);
+        const serverNickname = nicknameSnapshot.docs[0]?.data()?.serverNickname || '';
+
         return {
           id: memberDoc.id,
           userId: memberData.userId,
           displayName: userData?.displayName || '',
-          profileImage: userData?.profileImage || "https://cdn.discordapp.com/embed/avatars/0.png",
+          profileImage: userData?.profileImage || 'https://cdn.discordapp.com/embed/avatars/0.png',
           role: memberData.role,
+          serverNickname: serverNickname,
         };
       })
     );
@@ -141,8 +156,8 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ show, serverID, onClo
                     {members.filter(member => member.role === 'owner').map(member => (
                       <div key={member.id} className="flex items-center justify-between p-2 border-b border-gray-300">
                         <div className="flex items-center">
-                          <img src={member.profileImage || "https://cdn.discordapp.com/embed/avatars/0.png"} alt={member.displayName} className="w-8 h-8 rounded-full mr-2" />
-                          <span>{member.displayName}</span>
+                          <img src={member.profileImage} alt={member.displayName} className="w-8 h-8 rounded-full mr-2" />
+                          <span>{member.serverNickname || member.displayName}</span>
                         </div>
                       </div>
                     ))}
@@ -152,8 +167,8 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ show, serverID, onClo
                     {members.filter(member => member.role === 'admin').map(member => (
                       <div key={member.id} className="flex items-center justify-between p-2 border-b border-gray-300">
                         <div className="flex items-center">
-                          <img src={member.profileImage || "https://cdn.discordapp.com/embed/avatars/0.png"} alt={member.displayName} className="w-8 h-8 rounded-full mr-2" />
-                          <span>{member.displayName}</span>
+                          <img src={member.profileImage} alt={member.displayName} className="w-8 h-8 rounded-full mr-2" />
+                          <span>{member.serverNickname || member.displayName}</span>
                         </div>
                         <div className="flex space-x-2">
                           <button
@@ -177,8 +192,8 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ show, serverID, onClo
                     {members.filter(member => member.role === 'member').map(member => (
                       <div key={member.id} className="flex items-center justify-between p-2 border-b border-gray-300 w-full">
                         <div className="flex items-center">
-                          <img src={member.profileImage || "https://cdn.discordapp.com/embed/avatars/0.png"} alt={member.displayName} className="w-8 h-8 rounded-full mr-2" />
-                          <span>{member.displayName}</span>
+                          <img src={member.profileImage} alt={member.displayName} className="w-8 h-8 rounded-full mr-2" />
+                          <span>{member.serverNickname || member.displayName}</span>
                         </div>
                         <div className="flex space-x-2">
                           <button

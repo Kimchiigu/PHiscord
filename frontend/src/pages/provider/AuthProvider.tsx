@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { auth } from '../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -12,6 +12,9 @@ interface User {
   discriminator: string | null;
   profilePicture: string | null;
   phoneNumber: string | null;
+  isOnline: boolean;
+  customStatus: string | null;
+  dob: {date: number, month: number, year: number} | null;
 }
 
 interface AuthContextType {
@@ -24,7 +27,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const fetchUserData = async (uid: string) => {
+  const fetchUserData = useCallback(async (uid: string) => {
+    console.log(`Fetching user data for UID: ${uid}`);
     const userDoc = doc(db, 'Users', uid);
     const userSnap = await getDoc(userDoc);
     if (userSnap.exists()) {
@@ -37,12 +41,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         discriminator: uid.slice(-4),
         profilePicture: userData.profilePicture || null,
         phoneNumber: userData.phoneNumber || null,
+        isOnline: userData.isOnline,
+        customStatus: userData.customStatus || null,
+        dob: userData.dob || null,
       });
     }
-  };
+  }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         fetchUserData(user.uid);
       } else {
@@ -51,13 +58,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchUserData]);
 
-  const refreshCurrentUser = () => {
+  const refreshCurrentUser = useCallback(() => {
     if (currentUser?.uid) {
       fetchUserData(currentUser.uid);
     }
-  };
+  }, [currentUser?.uid, fetchUserData]);
 
   return (
     <AuthContext.Provider value={{ currentUser, refreshCurrentUser }}>

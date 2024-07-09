@@ -2,27 +2,37 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../provider/AuthProvider';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebaseConfig';
+import { doc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig';
 
 function SettingsSidebar() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  
+
+  const setOnlineStatus = async (uid: string, isOnline: boolean) => {
+    const userDoc = doc(db, 'Users', uid);
+    await updateDoc(userDoc, { isOnline });
+    console.log(`User ${uid} status set to ${isOnline ? 'online' : 'offline'}`);
+  };
+
   const handleLogout = async () => {
-    await signOut(auth);
-    navigate('/login');
+    if (currentUser) {
+      await setOnlineStatus(currentUser.uid, false);
+      await signOut(auth);
+      navigate('/login');
+    }
   };
 
   const handleExit = () => {
     navigate('/dashboard');
-  }
+  };
 
   return (
     <aside className="flex flex-col w-64 h-full px-4 py-8 bg-[var(--bg-color)] border-r border-[var(--border-color)] fixed left-0 top-0 text-[var(--text-color)]">
       <div className="flex flex-col items-center -mx-2">
-        <img className="object-cover w-24 h-24 mx-2 rounded-full" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="avatar" />
-        <h4 className="mx-2 mt-2 font-medium">{currentUser?.username}</h4>
-        <p className="mx-2 mt-1 text-sm font-medium text-[var(--text-color)]">{currentUser?.email}</p>
+        <img className="object-cover w-24 h-24 mx-2 rounded-full" src={currentUser?.profilePicture || "https://cdn.discordapp.com/embed/avatars/0.png"} alt="avatar" />
+        <h4 className="mx-2 mt-2 font-bold text-2xl">{currentUser?.displayName}</h4>
+        <h4 className="mx-2 font-medium text-lg">{currentUser?.username}</h4>
       </div>
 
       <div className="flex flex-col justify-between flex-1 mt-6">
