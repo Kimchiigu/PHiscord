@@ -8,10 +8,11 @@ import FriendList from './friend/FriendList';
 import FriendChat from './friend/FriendChat';
 import FriendProfile from './friend/FriendProfile';
 import FriendCategory from './friend/FriendCategory';
+import VoiceChannel from './channel/VoiceChannel'; // Import the VoiceChannel component
 
 const Dashboard: React.FC = () => {
   const [selectedServer, setSelectedServer] = useState<{ id: string; name: string; isOwner: boolean } | null>(null);
-  const [selectedChannel, setSelectedChannel] = useState<{ id: string; name: string } | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState<{ id: string; name: string; type: 'text' | 'voice' } | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<{ userId: string; displayName: string } | null>(null);
   const [dmSelected, setDmSelected] = useState<boolean>(false);
   const [selectedTab, setSelectedTab] = useState<'friends' | 'online' | 'all' | 'pending' | 'blocked' | 'addFriend'>('friends');
@@ -41,14 +42,23 @@ const Dashboard: React.FC = () => {
             serverID={selectedServer.id}
             serverName={selectedServer.name}
             isOwner={selectedServer.isOwner}
-            onChannelSelect={(id, name) => setSelectedChannel({ id, name })}
+            onChannelSelect={(id, name, nsfw) => setSelectedChannel({ id, name, type: 'text' })}
+            onVoiceChannelSelect={(id, name) => setSelectedChannel({ id, name, type: 'voice' })}
           />
           {selectedChannel ? (
-            <Chat
-              serverID={selectedServer.id}
-              channelID={selectedChannel.id}
-              channelName={selectedChannel.name}
-            />
+            selectedChannel.type === 'text' ? (
+              <Chat
+                serverID={selectedServer.id}
+                channelID={selectedChannel.id}
+                channelName={selectedChannel.name}
+              />
+            ) : (
+              <VoiceChannel
+                serverID={selectedServer.id}
+                channelID={selectedChannel.id}
+                channelName={selectedChannel.name}
+              />
+            )
           ) : (
             <div className="flex-1 flex items-center justify-center bg-gray-700">
               <h2 className="text-gray-400">Select a channel to start chatting</h2>
@@ -58,11 +68,11 @@ const Dashboard: React.FC = () => {
         </>
       ) : dmSelected ? (
         <div className="flex flex-1 overflow-hidden">
-          <FriendList 
+          <FriendList
             onFriendSelect={(friend) => {
               setSelectedFriend(friend);
               setCategorySelected(false);  // Reset category selection when a friend is selected
-            }} 
+            }}
             onCategorySelect={() => setCategorySelected(true)}
           />
           {categorySelected ? (

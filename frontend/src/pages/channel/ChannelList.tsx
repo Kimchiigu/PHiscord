@@ -26,6 +26,7 @@ interface ChannelListProps {
   isOwner: boolean;
   isAdmin: boolean;
   onChannelSelect: (id: string, name: string, nsfw: boolean) => void;
+  onVoiceChannelSelect: (id: string, name: string) => void;
 }
 
 const ChannelList: React.FC<ChannelListProps> = ({
@@ -33,6 +34,7 @@ const ChannelList: React.FC<ChannelListProps> = ({
   serverName,
   serverImage,
   onChannelSelect,
+  onVoiceChannelSelect,
 }) => {
   const { currentUser } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -303,7 +305,7 @@ const ChannelList: React.FC<ChannelListProps> = ({
             <div
               key={channel.id}
               className="group relative bg-teal-dark hover:bg-gray-800 cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left flex justify-between items-center"
-              onClick={() => onChannelSelect(channel.id, channel.name, channel.nsfw || false)}
+              onClick={() => onVoiceChannelSelect(channel.id, channel.name)}
             >
               <span># {channel.name}</span>
               {(currentRole === 'owner' || currentRole === 'admin') && (

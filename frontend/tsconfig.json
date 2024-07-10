@@ -28,6 +28,6 @@
       ]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/GenerateToken.js"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
