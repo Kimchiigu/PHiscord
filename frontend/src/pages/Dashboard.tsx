@@ -8,7 +8,6 @@ import FriendList from './friend/FriendList';
 import FriendChat from './friend/FriendChat';
 import FriendProfile from './friend/FriendProfile';
 import FriendCategory from './friend/FriendCategory';
-import ProfileBar from './ProfileBar';
 
 const Dashboard: React.FC = () => {
   const [selectedServer, setSelectedServer] = useState<{ id: string; name: string; isOwner: boolean } | null>(null);
@@ -60,7 +59,10 @@ const Dashboard: React.FC = () => {
       ) : dmSelected ? (
         <div className="flex flex-1 overflow-hidden">
           <FriendList 
-            onFriendSelect={(friend) => setSelectedFriend(friend)} 
+            onFriendSelect={(friend) => {
+              setSelectedFriend(friend);
+              setCategorySelected(false);  // Reset category selection when a friend is selected
+            }} 
             onCategorySelect={() => setCategorySelected(true)}
           />
           {categorySelected ? (

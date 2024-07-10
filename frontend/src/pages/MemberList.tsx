@@ -133,15 +133,18 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
     }
   };
 
-  const handleAddFriend = async (userId: string) => {
+  const handleSendFriendRequest = async (userId: string) => {
     if (!currentUser) return;
 
     try {
-      const friendRef = doc(db, 'Users', currentUser.uid, 'Friends', userId);
-      await setDoc(friendRef, { userId });
-      setIsFriend(true);
+      await addDoc(collection(db, 'FriendRequests'), {
+        senderId: currentUser.uid,
+        receiverId: userId,
+        status: 'waiting',
+      });
+      alert('Friend request sent successfully');
     } catch (error) {
-      console.error('Error adding friend:', error);
+      console.error('Error sending friend request:', error);
     }
   };
 
@@ -345,8 +348,8 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
                     Already Friends
                   </button>
                 ) : (
-                  <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded mb-2" onClick={() => handleAddFriend(selectedMember.userId)}>
-                    Add Friend
+                  <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded mb-2" onClick={() => handleSendFriendRequest(selectedMember.userId)}>
+                    Send Friend Request
                   </button>
                 )}
                 {isBlocked ? (
