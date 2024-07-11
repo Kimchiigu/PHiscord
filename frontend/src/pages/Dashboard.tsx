@@ -54,8 +54,8 @@ const Dashboard: React.FC = () => {
               />
             ) : (
               <VoiceChannel
-                serverID={selectedServer.id}
-                channelID={selectedChannel.id}
+                serverId={selectedServer.id}
+                channelId={selectedChannel.id}
                 channelName={selectedChannel.name}
               />
             )

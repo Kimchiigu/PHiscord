@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, getDocs, doc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import ProfileBar from '../ProfileBar';
 import CreateChannelModal from './CreateChannelModal';
 import EditChannelModal from './EditChannelModal';
@@ -29,6 +29,12 @@ interface ChannelListProps {
   onVoiceChannelSelect: (id: string, name: string) => void;
 }
 
+interface Participant {
+  uid: string;
+  username: string;
+  profilePicture: string | null;
+}
+
 const ChannelList: React.FC<ChannelListProps> = ({
   serverID,
   serverName,
@@ -38,6 +44,7 @@ const ChannelList: React.FC<ChannelListProps> = ({
 }) => {
   const { currentUser } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [participants, setParticipants] = useState<{ [key: string]: Participant[] }>({});
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const [showEditChannelModal, setShowEditChannelModal] = useState<{ show: boolean; channelID: string }>({ show: false, channelID: '' });
   const [showDeleteChannelModal, setShowDeleteChannelModal] = useState<{ show: boolean; channelID: string; channelName: string }>({ show: false, channelID: '', channelName: '' });
@@ -85,6 +92,35 @@ const ChannelList: React.FC<ChannelListProps> = ({
     };
     fetchUserRole();
   }, [serverID, serverName, serverImage, currentUser]);
+
+  useEffect(() => {
+    channels.forEach(channel => {
+      if (channel.type === 'voice') {
+        const channelDocRef = doc(db, 'Servers', serverID, 'Channels', channel.id);
+        onSnapshot(channelDocRef, async (channelDoc) => {
+          if (channelDoc.exists()) {
+            const participantsData = channelDoc.data().participants || [];
+            const participantsWithProfilePictures = await Promise.all(
+              participantsData.map(async (uid: string) => {
+                const userDoc = await getDoc(doc(db, 'Users', uid));
+                if (userDoc.exists()) {
+                  const profilePicturePath = userDoc.data()?.profilePicture;
+                  const username = userDoc.data()?.username;
+                  return {
+                    uid,
+                    username,
+                    profilePicture: profilePicturePath || null,
+                  };
+                }
+                return { uid, username: 'Unknown', profilePicture: null };
+              })
+            );
+            setParticipants(prev => ({ ...prev, [channel.id]: participantsWithProfilePictures }));
+          }
+        });
+      }
+    });
+  }, [channels, serverID]);
 
   const handleChannelCreated = async () => {
     const channelsCollection = collection(db, 'Servers', serverID, 'Channels');
@@ -302,42 +338,59 @@ const ChannelList: React.FC<ChannelListProps> = ({
         {channels
           .filter((channel) => channel.type === 'voice')
           .map((channel) => (
-            <div
-              key={channel.id}
-              className="group relative bg-teal-dark hover:bg-gray-800 cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left flex justify-between items-center"
-              onClick={() => onVoiceChannelSelect(channel.id, channel.name)}
-            >
-              <span># {channel.name}</span>
-              {(currentRole === 'owner' || currentRole === 'admin') && (
-                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100">
-                  <svg
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowEditChannelModal({ show: true, channelID: channel.id });
-                    }}
-                    className="fill-current h-4 w-4 cursor-pointer"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      d="M12.586 2.586a2 2 0 00-2.828 0l-7 7a2 2 0 000 2.828l7 7a2 2 0 002.828 0l7-7a2 2 0 000-2.828l-7-7zm1.414 9.414L11 14.586l-3-3 3-3 3 3z"
-                    />
-                  </svg>
-                  <svg
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteChannelModal({ show: true, channelID: channel.id, channelName: channel.name });
-                    }}
-                    className="fill-current h-4 w-4 cursor-pointer"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      d="M6 2a2 2 0 00-2 2v1H3a1 1 0 000 2h1v9a2 2 0 002 2h8a2 2 0 002-2V7h1a1 1 0 000-2h-1V4a2 2 0 00-2-2H6zm2 5a1 1 0 012 0v7a1 1 0 01-2 0V7zm4 0a1 1 0 012 0v7a1 1 0 01-2 0V7z"
-                    />
-                  </svg>
-                </div>
-              )}
+            <div key={channel.id}>
+              <div
+                className="group relative bg-teal-dark hover:bg-gray-800 cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left flex justify-between items-center"
+                onClick={() => onVoiceChannelSelect(channel.id, channel.name)}
+              >
+                <span># {channel.name}</span>
+                {(currentRole === 'owner' || currentRole === 'admin') && (
+                  <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100">
+                    <svg
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowEditChannelModal({ show: true, channelID: channel.id });
+                      }}
+                      className="fill-current h-4 w-4 cursor-pointer"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        d="M12.586 2.586a2 2 0 00-2.828 0l-7 7a2 2 0 000 2.828l7 7a2 2 0 002.828 0l7-7a2 2 0 000-2.828l-7-7zm1.414 9.414L11 14.586l-3-3 3-3 3 3z"
+                      />
+                    </svg>
+                    <svg
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteChannelModal({ show: true, channelID: channel.id, channelName: channel.name });
+                      }}
+                      className="fill-current h-4 w-4 cursor-pointer"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        d="M6 2a2 2 0 00-2 2v1H3a1 1 0 000 2h1v9a2 2 0 002 2h8a2 2 0 002-2V7h1a1 1 0 000-2h-1V4a2 2 0 00-2-2H6zm2 5a1 1 0 012 0v7a1 1 0 01-2 0V7zm4 0a1 1 0 012 0v7a1 1 0 01-2 0V7z"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div className="pl-8">
+                {participants[channel.id] && participants[channel.id].length > 0 ? (
+                  participants[channel.id].map((participant) => (
+                    <div key={participant.uid} className="flex items-center space-x-2 py-1">
+                      {participant.profilePicture ? (
+                        <img src={participant.profilePicture} alt="Profile" className="w-8 h-8 rounded-full" />
+                      ) : (
+                        <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
+                      )}
+                      <span className="text-gray-300">{participant.username}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500 italic"></div>
+                )}
+              </div>
             </div>
           ))}
       </div>

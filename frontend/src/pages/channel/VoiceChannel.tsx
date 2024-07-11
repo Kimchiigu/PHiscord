@@ -2,11 +2,16 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import AgoraRTC, { IAgoraRTCRemoteUser, IMicrophoneAudioTrack, ICameraVideoTrack } from 'agora-rtc-sdk-ng';
 import { useAuth } from '../provider/AuthProvider';
 import axios from 'axios';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { db } from '../firebaseConfig';
 
-const VoiceChannel: React.FC<{ channelName: string }> = ({ channelName }) => {
+interface Participant {
+  uid: string;
+  profilePicture: string | null;
+}
+
+const VoiceChannel: React.FC<{ serverId: string; channelId: string; channelName: string }> = ({ serverId, channelId, channelName }) => {
   const { currentUser } = useAuth();
   const client = useRef<ReturnType<typeof AgoraRTC.createClient> | null>(null);
   const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
@@ -17,6 +22,7 @@ const VoiceChannel: React.FC<{ channelName: string }> = ({ channelName }) => {
   const [isVideoOn, setIsVideoOn] = useState(false); // Default video to be turned off
   const [isDeafened, setIsDeafened] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
   useEffect(() => {
     if (!client.current) {
@@ -46,37 +52,76 @@ const VoiceChannel: React.FC<{ channelName: string }> = ({ channelName }) => {
       });
     }
 
-    return () => {
-      if (client.current) {
-        client.current.leave();
-        client.current = null;
-      }
-      localAudioTrack.current?.close();
-      localVideoTrack.current?.close();
-      setRemoteUsers([]);
-      setIsJoined(false);
-    };
-  }, []);
+    if (serverId && channelId) {
+      const unsubscribe = onSnapshot(doc(db, 'Servers', serverId, 'Channels', channelId), async (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          console.log('Participants data fetched:', docSnapshot.data()?.participants);
+          const participantsData = docSnapshot.data()?.participants || [];
+          const participantsWithProfilePictures = await Promise.all(
+            participantsData.map(async (uid: string) => {
+              const userDoc = await getDoc(doc(db, 'Users', uid));
+              if (userDoc.exists()) {
+                const profilePicturePath = userDoc.data()?.profilePicture;
+                const storage = getStorage();
+                const profilePictureRef = ref(storage, profilePicturePath);
+                const downloadURL = profilePicturePath ? await getDownloadURL(profilePictureRef) : null;
+                return { uid, profilePicture: downloadURL };
+              }
+              return { uid, profilePicture: null };
+            })
+          );
+          console.log('Updated participants:', participantsWithProfilePictures);
+          setParticipants(participantsWithProfilePictures);
+        }
+      });
+
+      return () => {
+        if (client.current) {
+          client.current.leave();
+          client.current = null;
+        }
+        localAudioTrack.current?.close();
+        localVideoTrack.current?.close();
+        setRemoteUsers([]);
+        setIsJoined(false);
+        unsubscribe();
+      };
+    }
+  }, [serverId, channelId]);
 
   const joinVoiceChannel = useCallback(async () => {
     if (!currentUser) return;
 
+    console.log('Attempting to join voice channel with user:', currentUser.uid);
+
     const tokenResponse = await axios.get(`http://localhost:3000/generateAgoraToken?channelName=${channelName}`);
     const token = tokenResponse.data.token;
 
+    console.log('Token created successfully: ', token);
+
     const userDoc = await getDoc(doc(db, 'Users', currentUser.uid));
     if (userDoc.exists()) {
-      const profilePicturePath = userDoc.data().profilePicture;
+      const profilePicturePath = userDoc.data()?.profilePicture;
       const storage = getStorage();
       const profilePictureRef = ref(storage, profilePicturePath);
       const downloadURL = await getDownloadURL(profilePictureRef);
       setProfilePicture(downloadURL);
+      console.log("Current User with ", currentUser.uid, " exists");
     }
 
     if (client.current) {
+      console.log('Updating Firestore with user:', currentUser.uid);
+      await updateDoc(doc(db, 'Servers', serverId, 'Channels', channelId), {
+        participants: arrayUnion(currentUser.uid)
+      });
+
+      console.log('User joined and updated Firestore:', currentUser.uid);
+      setIsJoined(true);
+
       await client.current.join('ec70b661b8554e4cb1d7e225b40364e4', channelName, token, currentUser.uid);
       localAudioTrack.current = await AgoraRTC.createMicrophoneAudioTrack();
       localVideoTrack.current = await AgoraRTC.createCameraVideoTrack();
+      console.log("Current User with ", currentUser.uid, " has joined successfully");
 
       await client.current.publish([localAudioTrack.current]);
 
@@ -84,18 +129,18 @@ const VoiceChannel: React.FC<{ channelName: string }> = ({ channelName }) => {
         await client.current.publish([localVideoTrack.current]);
         localVideoTrack.current.play('local-player');
       }
-      
-      setIsJoined(true);
     }
-  }, [channelName, currentUser, isVideoOn]);
+  }, [channelName, currentUser, isVideoOn, serverId, channelId]);
 
   useEffect(() => {
     if (isJoined) {
+      console.log('isJoined is true, calling joinVoiceChannel');
       joinVoiceChannel();
     }
   }, [isJoined, joinVoiceChannel]);
 
   const handleJoinClick = () => {
+    console.log('Join button clicked');
     setIsJoined(true);
   };
 
@@ -148,6 +193,10 @@ const VoiceChannel: React.FC<{ channelName: string }> = ({ channelName }) => {
     }
     localAudioTrack.current?.close();
     localVideoTrack.current?.close();
+    await updateDoc(doc(db, 'Servers', serverId, 'Channels', channelId), {
+      participants: arrayRemove(currentUser?.uid)
+    });
+    console.log('User left:', currentUser?.uid);
     setRemoteUsers([]);
     setIsJoined(false);
   };
@@ -157,7 +206,24 @@ const VoiceChannel: React.FC<{ channelName: string }> = ({ channelName }) => {
       {!isJoined && (
         <div className="text-center">
           <h1 className="text-white text-4xl font-semibold mb-2">{channelName}</h1>
-          <p className="text-gray-400 mb-4">No one is currently in voice.</p>
+          {participants.length === 0 ? (
+            <p className="text-gray-400 mb-4">No one is currently in the voice</p>
+          ) : (
+            <>
+            <p className="text-gray-400 mb-4">Current Participants:</p>
+            <div className="flex space-x-4 mb-4">
+              {participants.map((participant) => (
+                <div key={participant.uid} className="w-24 h-24">
+                  {participant.profilePicture ? (
+                    <img src={participant.profilePicture} alt="Profile" className="w-24 h-24 object-cover rounded-full" />
+                  ) : (
+                    <div className="w-24 h-24 bg-gray-700 rounded-full"></div>
+                  )}
+                </div>
+              ))}
+            </div>
+            </>
+          )}
           <button className="bg-green-500 text-white px-4 py-2 rounded-lg" onClick={handleJoinClick}>Join Voice</button>
         </div>
       )}
@@ -173,6 +239,23 @@ const VoiceChannel: React.FC<{ channelName: string }> = ({ channelName }) => {
           {remoteUsers.map((user) => (
             <div key={user.uid} id={`user-${user.uid}`} className="w-full h-64 bg-gray-900"></div>
           ))}
+          <div className="mt-3 w-2/3 h-64 bg-gray-900 rounded-xl flex justify-center items-center">
+            {participants
+              .filter((participant) => participant.uid !== currentUser?.uid)
+              .map((participant) => (
+                <div key={participant.uid} className="w-full h-64 bg-gray-900 flex justify-center items-center rounded-xl">
+                  {participant.profilePicture ? (
+                    <div className="flex w-full bg-re items-center justify-center">
+                      <img src={participant.profilePicture} alt="Profile" className="w-24 h-24 object-cover rounded-full" />
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 bg-gray-700 rounded-full">
+                      <h1 className='text-gray-100 font-semibold'>Invite your other friends!</h1>
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
           <div className="flex space-x-2 mt-4">
             <button className="bg-blue-500 text-white px-4 py-2 rounded-lg" onClick={handleMute}>{isMuted ? 'Unmute' : 'Mute'}</button>
             <button className="bg-yellow-500 text-white px-4 py-2 rounded-lg" onClick={handleDeafen}>{isDeafened ? 'Undeafen' : 'Deafen'}</button>
