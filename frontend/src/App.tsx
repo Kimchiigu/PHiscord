@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import './App.css'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register';
-import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import ToastProvider from "./pages/provider/ToastProvider";
 import Settings from "./pages/settings/Settings";
@@ -24,7 +23,6 @@ function App() {
               <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/home" element={<Home />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/settings" element={<Settings />}>
                 {/* Child routes will be rendered inside the Outlet of the Settings component */}

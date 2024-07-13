@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../provider/ThemeProvider';
-import { db } from '../firebaseConfig';
+import { db } from '../FirebaseConfig';
 import { getAuth } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 

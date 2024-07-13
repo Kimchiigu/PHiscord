@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../firebaseConfig';
+import { db } from '../FirebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 
 interface FriendProfileProps {
   friendId: string;
+  onCallInitiate: (callType: 'voice' | 'video', friendId: string, friendDisplayName: string) => void;
 }
 
 interface FriendData {
   displayName: string;
   profilePicture: string;
-  email: string;
+  customStatus: string;
+  isOnline: boolean;
 }
 
-const FriendProfile: React.FC<FriendProfileProps> = ({ friendId }) => {
+const FriendProfile: React.FC<FriendProfileProps> = ({ friendId, onCallInitiate }) => {
   const [friendData, setFriendData] = useState<FriendData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,7 +48,26 @@ const FriendProfile: React.FC<FriendProfileProps> = ({ friendId }) => {
               className="w-32 h-32 rounded-full mx-auto mb-4"
             />
             <h2 className="text-white text-xl text-center">{friendData.displayName}</h2>
-            <p className="text-gray-400 text-center">{friendData.email}</p>
+            <p className="text-gray-400 text-center">{friendData.customStatus || friendData.isOnline ? "Online" : "Offline"}</p>
+            <div className="flex flex-col">
+              <button
+                className='bg-indigo-500 text-gray-100 rounded-md py-2 mt-3 mb-2 hover:bg-indigo-600 transition-all'
+                onClick={() => onCallInitiate('voice', friendId, friendData.displayName)}
+                disabled={!friendData.isOnline}
+              >
+                Voice Call
+              </button>
+              <button
+                className='bg-indigo-500 text-gray-100 rounded-md py-2 hover:bg-indigo-600 transition-all'
+                onClick={() => onCallInitiate('video', friendId, friendData.displayName)}
+                disabled={!friendData.isOnline}
+              >
+                Video Call
+              </button>
+              {!friendData.isOnline && (
+                <p className="text-red-500 text-center mt-2">Can't make a call, user is offline</p>
+              )}
+            </div>
           </div>
         )
       )}
@@ -55,3 +76,4 @@ const FriendProfile: React.FC<FriendProfileProps> = ({ friendId }) => {
 };
 
 export default FriendProfile;
+  

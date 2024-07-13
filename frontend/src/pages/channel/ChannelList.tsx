@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../firebaseConfig';
+import { db } from '../FirebaseConfig';
 import { collection, getDocs, doc, deleteDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import ProfileBar from '../ProfileBar';
 import CreateChannelModal from './CreateChannelModal';
