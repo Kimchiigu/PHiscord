@@ -66,9 +66,9 @@ const UserProfile = () => {
   };
 
   return (
-    <div className="bg-[var(--bg-color)] min-h-screen flex items-center justify-center w-full text-[var(--text-color)]">
-      <div className="bg-[var(--bg-color-second)] w-full max-w-4xl p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-semibold mb-4 text-left">My Account</h2>
+    <div className="bg-[var(--bg-color)] min-h-screen flex items-center justify-center w-full text-[var(--primary-text-color)]">
+      <div className="bg-[var(--secondary-bg-color)] w-full max-w-4xl p-6 rounded-lg shadow-lg">
+        <h2 className="text-xl font-semibold mb-4 text-left text-[--primary-text-color]">My Account</h2>
         <div className="bg-indigo-500 p-4 rounded-t-lg flex items-center justify-between">
           <div className="flex items-center">
             <img
@@ -77,19 +77,19 @@ const UserProfile = () => {
               className="w-16 h-16 rounded-full border-4 border-black"
             />
             <div className="ml-4">
-              <p className="text-lg font-bold text-white text-left">{currentUser?.username}</p>
+              <p className="text-lg font-bold text-[--primary-text-color] text-left">{currentUser?.username}</p>
               <div className="flex items-center mt-1">
-                <div className="bg-gray-700 px-2 py-1 rounded-full text-sm font-medium flex items-center">
+                <div className="bg-[--secondary-bg-color] px-2 py-1 rounded-full text-sm font-medium flex items-center">
                   <svg className={currentUser?.isOnline ? "w-4 h-4 text-green-500" : "w-4 h-4 text-red-500"} fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11H9v4h2V7zm0 6H9v2h2v-2z" />
                   </svg>
-                  <span className="ml-2 mr-2 text-white">{currentUser?.isOnline ? 'Online' : 'Offline'}</span>
+                  <span className="ml-2 mr-2 text-[--primary-text-color]">{currentUser?.isOnline ? 'Online' : 'Offline'}</span>
                 </div>
               </div>
             </div>
           </div>
           <button
-            className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-gray-300"
+            className="bg-[--secondary-bg-color] hover:bg-gray-600 px-3 py-1 rounded text-[--secondary-text-color]"
             onClick={() => setShowProfilePictureModal(true)}
           >
             Edit Profile Picture
@@ -101,7 +101,7 @@ const UserProfile = () => {
             <div className="flex justify-between items-center mt-1">
               <p>{currentUser?.displayName}</p>
               <button
-                className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-gray-300"
+                className="bg-[--tersier-bg-color] hover:bg-gray-600 px-3 py-1 rounded text-[--secondary-text-color]"
                 onClick={() => setShowDisplayNameModal(true)}
               >
                 Edit
@@ -113,7 +113,7 @@ const UserProfile = () => {
             <div className="flex justify-between items-center mt-1">
               <p>{currentUser?.username}</p>
               <button
-                className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-gray-300"
+                className="bg-[--tersier-bg-color] hover:bg-gray-600 px-3 py-1 rounded text-[--secondary-text-color]"
                 onClick={() => setShowUsernameModal(true)}
               >
                 Edit
@@ -139,7 +139,7 @@ const UserProfile = () => {
             <div className="flex justify-between items-center mt-1">
               <p>{currentUser?.dob ? formatDOB(currentUser.dob) : "You haven't added DOB"}</p>
               <button
-                className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-gray-300"
+                className="bg-[--tersier-bg-color] hover:bg-gray-600 px-3 py-1 rounded text-[--secondary-text-color]"
                 onClick={() => setShowDOBModal(true)}
               >
                 Edit
@@ -151,7 +151,7 @@ const UserProfile = () => {
             <div className="flex justify-between items-center mt-1">
               <p>{currentUser?.customStatus || (currentUser?.isOnline ? "Online" : "Offline")}</p>
               <button
-                className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-gray-300"
+                className="bg-[--tersier-bg-color] hover:bg-gray-600 px-3 py-1 rounded text-[--secondary-text-color]"
                 onClick={() => setShowStatusModal(true)}
               >
                 Edit
@@ -163,15 +163,15 @@ const UserProfile = () => {
 
       {/* Modals */}
       <Modal show={showDisplayNameModal} onClose={() => setShowDisplayNameModal(false)}>
-        <h3 className="text-lg font-semibold mb-4">Edit Display Name</h3>
+        <h3 className="text-lg font-semibold mb-4 text-[--primary-text-color]">Edit Display Name</h3>
         <input
           type="text"
           value={newDisplayName}
           onChange={(e) => setNewDisplayName(e.target.value)}
-          className="w-full p-2 mb-4 border border-gray-300 rounded"
+          className="w-full p-2 mb-4 border border-gray-300 bg-[--primary-bg-color] text-[--primary-text-color] rounded"
         />
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] font-bold py-2 px-4 rounded"
           onClick={() => {
             handleUpdateProfile('displayName', newDisplayName);
             setShowDisplayNameModal(false);
@@ -182,15 +182,15 @@ const UserProfile = () => {
       </Modal>
 
       <Modal show={showUsernameModal} onClose={() => setShowUsernameModal(false)}>
-        <h3 className="text-lg font-semibold mb-4">Edit Username</h3>
+        <h3 className="text-lg font-semibold mb-4 text-[--primary-text-color]">Edit Username</h3>
         <input
           type="text"
           value={newUsername}
           onChange={(e) => setNewUsername(e.target.value)}
-          className="w-full p-2 mb-4 border border-gray-300 rounded"
+          className="w-full p-2 mb-4 border bg-[--primary-bg-color] text-[--primary-text-color] border-gray-300 rounded"
         />
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] font-bold py-2 px-4 rounded"
           onClick={() => {
             handleUpdateProfile('username', newUsername);
             setShowUsernameModal(false);
@@ -206,10 +206,10 @@ const UserProfile = () => {
           selected={newDOB}
           onChange={(date) => setNewDOB(date)}
           dateFormat="dd/MM/yyyy"
-          className="w-full p-2 mb-4 border border-gray-300 rounded"
+          className="w-full p-2 mb-4 border border-gray-300 rounded bg-[--primary-bg-color] text-[--primary-text-color]"
         />
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] font-bold py-2 px-4 rounded"
           onClick={() => {
             if (newDOB) {
               const dob = { date: newDOB.getDate(), month: newDOB.getMonth() + 1, year: newDOB.getFullYear() };
@@ -228,10 +228,10 @@ const UserProfile = () => {
           type="text"
           value={newStatus}
           onChange={(e) => setNewStatus(e.target.value)}
-          className="w-full p-2 mb-4 border border-gray-300 rounded"
+          className="w-full p-2 mb-4 border border-gray-300 rounded bg-[--primary-bg-color] text-[--primary-text-color]"
         />
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] font-bold py-2 px-4 rounded"
           onClick={() => {
             handleUpdateProfile('customStatus', newStatus);
             setShowStatusModal(false);
@@ -247,10 +247,10 @@ const UserProfile = () => {
             type="file"
             accept='image/*' 
             onChange={handleProfilePictureChange}
-            className='w-full p-2 mb-4 border border-gray-300 rounded'
+            className='w-full p-2 mb-4 border border-gray-300 rounded bg-[--primary-bg-color] text-[--primary-text-color]'
           />
           <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] font-bold py-2 px-4 rounded"
             onClick={handleProfilePictureUpload}
           >
             Save

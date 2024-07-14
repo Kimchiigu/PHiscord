@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTheme } from './provider/ThemeProvider';
 
 interface MessageProps {
   id: string;
@@ -15,6 +16,7 @@ interface MessageProps {
 const Message: React.FC<MessageProps> = ({ src, user, message, time, editedTime, onDelete, onEdit, isMentioned }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editMessage, setEditMessage] = useState(message);
+  const { fontSize } = useTheme();
 
   const isImage = (url: string) => /(\.jpeg|\.jpg|\.gif|\.png)/.test(url);
   const isVideo = (url: string) => /(\.mp4|\.webm|\.ogg)/.test(url);
@@ -67,8 +69,8 @@ const Message: React.FC<MessageProps> = ({ src, user, message, time, editedTime,
       <img src={src} className="cursor-pointer w-10 h-10 rounded-3xl mr-3" alt={`${user}'s avatar`} />
       <div className="flex-1 overflow-hidden">
         <div>
-          <span className="font-bold text-red-300 cursor-pointer hover:underline mr-2">{user}</span>
-          <span className="font-bold text-gray-400 text-xs">{time}</span>
+          <span className="font-bold text-[--display-color] cursor-pointer hover:underline mr-2">{user}</span>
+          <span className="font-bold text-[--secondary-text-color] text-xs">{time}</span>
         </div>
         {isEditing ? (
           <input
@@ -84,7 +86,7 @@ const Message: React.FC<MessageProps> = ({ src, user, message, time, editedTime,
                 setEditMessage(message);
               }
             }}
-            className="text-white leading-normal mt-2 bg-gray-800 rounded p-2 w-full"
+            className="text-[--primary-text-color] leading-normal mt-2 bg-gray-800 rounded p-2 w-full"
           />
         ) : (
           <>
@@ -98,7 +100,7 @@ const Message: React.FC<MessageProps> = ({ src, user, message, time, editedTime,
             ) : messageType === 'file' ? (
               renderFilePreview(message)
             ) : (
-              <p className="text-white leading-normal mt-2">{message}</p>
+              <p className={`text-[--primary-text-color] leading-normal mt-2 text-[var(--font-size-${fontSize})]`}>{message}</p>
             )}
             {editedTime && (
               <div className="text-gray-400 text-xs mt-1">

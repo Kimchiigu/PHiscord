@@ -12,7 +12,7 @@ interface Friend {
 
 interface FriendListProps {
   onFriendSelect: (friend: Friend) => void;
-  onCategorySelect: () => void;
+  onCategorySelect: (category: 'friends' | 'notifications') => void;
 }
 
 const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelect }) => {
@@ -111,31 +111,37 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
   };
 
   return (
-    <div className="bg-gray-800 text-purple-lighter flex-none w-64 pb-6 hidden md:block relative">
-      <div className="text-white mb-2 mt-3 px-4 flex justify-between border-b border-gray-600 py-1 shadow-xl">
+    <div className="bg-[--secondary-bg-color] text-purple-lighter flex-none w-64 pb-6 hidden md:block relative">
+      <div className="text-[--primary-text-color] mb-2 mt-3 px-4 flex justify-between border-b border-gray-600 py-1 shadow-xl">
         <div className="flex-auto">
-          <h1 className="font-semibold text-xl leading-tight mb-1 truncate">Direct Message</h1>
+          <h1 className="font-semibold text-xl leading-tight mb-3 truncate">Direct Message</h1>
         </div>
       </div>
       <div className="mb-4 px-4 text-left">
         <button
-          className='bg-indigo-600 flex justify-center items-center py-3 rounded-lg mb-5 mt-5 w-full'
-          onClick={onCategorySelect}
+          className='bg-violet-600 flex justify-center items-center py-3 rounded-lg mt-5 mb-2 w-full'
+          onClick={() => onCategorySelect('notifications')}
         >
-          <h1 className="text-gray-100 font-semibold text-left text-sm">FRIENDS</h1>
+          <h1 className="text-[--primary-text-color] font-semibold text-left text-sm">NOTIFICATIONS</h1>
+        </button>
+        <button
+          className='bg-indigo-600 flex justify-center items-center py-3 rounded-lg mb-5 w-full'
+          onClick={() => onCategorySelect('friends')}
+        >
+          <h1 className="text-[--primary-text-color] font-semibold text-left text-sm">FRIENDS</h1>
         </button>
         {loading ? (
-          <p className="text-gray-400 text-center">Loading friends list...</p>
+          <p className="text-[--secondary-text-color] text-center">Loading friends list...</p>
         ) : (
           <>
             {friends.length > 0 && (
               <>
-                <h1 className="text-gray-400 font-semibold text-left mb-2 text-sm">DIRECT MESSAGES</h1>
+                <h1 className="text-[--secondary-text-color] font-semibold text-left mb-2 text-sm">DIRECT MESSAGES</h1>
                 {friends.map((friend) => (
                   <div key={friend.userId} className="flex items-center mb-2 cursor-pointer" onClick={() => onFriendSelect(friend)}>
                     <img src={friend.profilePicture} alt="Friend" className="w-10 h-10 rounded-full mr-3" />
                     <div className="flex flex-col">
-                      <span className="font-bold text-white text-left">{friend.displayName}</span>
+                      <span className="font-bold text-[--primary-text-color] text-left">{friend.displayName}</span>
                     </div>
                   </div>
                 ))}
@@ -143,12 +149,12 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
             )}
             {privacySettings.guestMessages !== 'block' && guests.length > 0 && (
               <>
-                <h1 className="text-gray-400 font-semibold text-left mb-2 text-sm">STRANGERS</h1>
+                <h1 className="text-[--secondary-text-color] font-semibold text-left mb-2 text-sm">STRANGERS</h1>
                 {guests.map((guest) => (
                   <div key={guest.userId} className="flex items-center mb-2 cursor-pointer" onClick={() => handleGuestClick(guest)}>
                     <img src={guest.profilePicture} alt="Guest" className="w-10 h-10 rounded-full mr-3" />
                     <div className="flex flex-col">
-                      <span className="font-bold text-white text-left">{guest.displayName}</span>
+                      <span className="font-bold text-[--primary-text-color] text-left">{guest.displayName}</span>
                     </div>
                   </div>
                 ))}
@@ -160,14 +166,14 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
       </div>
       {modalIsOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md mx-auto">
-            <h2 className="text-white text-xl font-bold mb-4">Guest Message</h2>
-            <p className="text-gray-400 mb-6">Do you want to open the message from this guest?</p>
+          <div className="bg-[--primary-bg-color] p-8 rounded-lg shadow-md w-full max-w-md mx-auto">
+            <h2 className="text-[--primary-text-color] text-xl font-bold mb-4">Guest Message</h2>
+            <p className="text-[--secondary-text-color] mb-6">Do you want to open the message from this guest?</p>
             <div className="flex justify-end space-x-4">
-              <button className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded" onClick={() => handleModalClose(false)}>
+              <button className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-[--primary-text-color] rounded" onClick={() => handleModalClose(false)}>
                 No
               </button>
-              <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded" onClick={() => handleModalClose(true)}>
+              <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] rounded" onClick={() => handleModalClose(true)}>
                 Yes
               </button>
             </div>

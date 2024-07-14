@@ -13,6 +13,7 @@ import FriendCategory from './friend/FriendCategory';
 import VoiceChannel from './channel/VoiceChannel';
 import FriendCall from './friend/FriendCall';
 import CallNotificationModal from './CallNotificationModal';
+import Notification from './Notification';
 import { useAuth } from './provider/AuthProvider';
 
 const ipcRenderer = typeof window !== 'undefined' && window.require ? window.require('electron').ipcRenderer : null;
@@ -24,7 +25,7 @@ const Dashboard: React.FC = () => {
   const [selectedFriend, setSelectedFriend] = useState<{ userId: string; displayName: string } | null>(null);
   const [dmSelected, setDmSelected] = useState<boolean>(false);
   const [selectedTab, setSelectedTab] = useState<'friends' | 'online' | 'all' | 'pending' | 'blocked' | 'addFriend'>('friends');
-  const [categorySelected, setCategorySelected] = useState<boolean>(false);
+  const [categorySelected, setCategorySelected] = useState<'friends' | 'notifications' | null>(null);
   const [callData, setCallData] = useState<{ callType: 'voice' | 'video'; friendId: string; dmDocId: string } | null>(null);
   const [incomingCall, setIncomingCall] = useState<{ from: string; displayName: string; type: 'voice' | 'video'; dmDocId: string } | null>(null);
 
@@ -138,14 +139,14 @@ const Dashboard: React.FC = () => {
           setSelectedChannel(null);
           setSelectedFriend(null);
           setDmSelected(false);
-          setCategorySelected(false);
+          setCategorySelected(null);
         }}
         onDmSelect={() => {
           setSelectedServer(null);
           setSelectedChannel(null);
           setSelectedFriend(null);
           setDmSelected(true);
-          setCategorySelected(false);
+          setCategorySelected(null);
         }}
       />
       {selectedServer ? (
@@ -172,8 +173,8 @@ const Dashboard: React.FC = () => {
               />
             )
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-gray-700">
-              <h2 className="text-gray-400">Select a channel to start chatting</h2>
+            <div className="flex-1 flex items-center justify-center bg-[--bg-color]">
+              <h2 className="text-[--secondary-text-color]">Select a channel to start chatting</h2>
             </div>
           )}
           <MemberList serverID={selectedServer.id} />
@@ -183,12 +184,14 @@ const Dashboard: React.FC = () => {
           <FriendList
             onFriendSelect={(friend) => {
               setSelectedFriend(friend);
-              setCategorySelected(false);
+              setCategorySelected(null);
               setCallData(null); // Reset call state when selecting a new friend
             }}
-            onCategorySelect={() => setCategorySelected(true)}
+            onCategorySelect={(category) => setCategorySelected(category)}
           />
-          {categorySelected ? (
+          {categorySelected === 'notifications' ? (
+            <Notification />
+          ) : categorySelected === 'friends' ? (
             <FriendCategory selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
           ) : selectedFriend ? (
             <>
@@ -210,14 +213,14 @@ const Dashboard: React.FC = () => {
               )}
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-gray-700">
-              <h2 className="text-gray-400">Choose a friend to get started chatting</h2>
+            <div className="flex-1 flex items-center justify-center bg-[--bg-color]">
+              <h2 className="text-[--secondary-text-color]">Choose a friend to get started chatting</h2>
             </div>
           )}
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center bg-gray-700">
-          <h2 className="text-gray-400">Choose a server or friend to get started</h2>
+        <div className="flex-1 flex items-center justify-center bg-[--bg-color]">
+          <h2 className="text-[--secondary-text-color]">Choose a server or friend to get started</h2>
         </div>
       )}
     </div>

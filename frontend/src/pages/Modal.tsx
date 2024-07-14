@@ -113,10 +113,10 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
     return (
       <>
         {selectedOption === 'create' && (
-          <div className="p-4 md:p-5">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Create Your Own Server</h3>
+          <div className="p-4 md:p-5 bg-[--primary-bg-color]">
+            <h3 className="text-2xl font-bold text-[--primary-text-color]  mb-4">Create Your Own Server</h3>
             <div className="mb-4">
-              <label htmlFor="serverName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Server Name</label>
+              <label htmlFor="serverName" className="block text-sm font-medium text-[--secondary-text-color] dark:text-gray-300">Server Name</label>
               <input
                 type="text"
                 id="serverName"
@@ -126,11 +126,11 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
               />
             </div>
             <div className="mb-4">
-              <label htmlFor="serverImage" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Server Image</label>
+              <label htmlFor="serverImage" className="block text-sm font-medium text-[--secondary-text-color] dark:text-gray-300">Server Image</label>
               <input
                 type="file"
                 id="serverImage"
-                className="mt-1 block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer dark:text-gray-400 dark:bg-gray-700 dark:border-gray-600"
+                className="mt-1 block w-full text-sm text-[--primary-text-color] bg-gray-50 rounded-lg border border-gray-300 cursor-pointer dark:text-gray-400 dark:bg-gray-700 dark:border-gray-600"
                 onChange={(e) => setServerImage(e.target.files?.[0] || null)}
               />
             </div>
@@ -145,9 +145,9 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
         )}
         {selectedOption === 'join' && (
           <div className="p-4 md:p-5">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Join a Server</h3>
+            <h3 className="text-2xl font-bold text-[--primary-text-color] dark:text-white mb-4">Join a Server</h3>
             <div className="mb-4">
-              <label htmlFor="inviteLink" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Invite Link</label>
+              <label htmlFor="inviteLink" className="block text-sm font-medium text-[--secondary-text-color] dark:text-gray-300">Invite Link</label>
               <input
                 type="text"
                 id="inviteLink"
@@ -176,7 +176,7 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
           <input type="radio" id="create-server" name="server-option" value="create" className="hidden peer" required onChange={() => handleOptionChange('create')} />
           <label
             htmlFor="create-server"
-            className="inline-flex items-center justify-between w-full p-5 text-gray-900 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-500 dark:peer-checked:text-blue-500 peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-gray-900 hover:bg-gray-100 dark:text-white dark:bg-gray-600 dark:hover:bg-gray-500"
+            className="inline-flex items-center justify-between w-full p-5 text-[--primary-text-color] bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-500 dark:peer-checked:text-blue-500 peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-[--primary-text-color] hover:bg-gray-100 dark:text-white dark:bg-gray-600 dark:hover:bg-gray-500"
           >
             <div className="block">
               <div className="w-full text-lg font-semibold">Create my Own Server</div>
@@ -197,14 +197,14 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
           <input type="radio" id="join-server" name="server-option" value="join" className="hidden peer" onChange={() => handleOptionChange('join')} />
           <label
             htmlFor="join-server"
-            className="inline-flex items-center justify-between w-full p-5 text-gray-900 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-500 dark:peer-checked:text-blue-500 peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-gray-900 hover:bg-gray-100 dark:text-white dark:bg-gray-600 dark:hover:bg-gray-500"
+            className="inline-flex items-center justify-between w-full p-5 text-[--primary-text-color] bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-500  peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-[--primary-text-color] hover:bg-gray-100 "
           >
             <div className="block">
               <div className="w-full text-lg font-semibold">Join a Server</div>
-              <div className="w-full text-gray-500 dark:text-gray-400">Get invited to a server!</div>
+              <div className="w-full text-gray-500 ">Get invited to a server!</div>
             </div>
             <svg
-              className="w-4 h-4 ms-3 rtl:rotate-180 text-gray-500 dark:text-gray-400"
+              className="w-4 h-4 ms-3 rtl:rotate-180 text-gray-500 "
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -216,7 +216,7 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
         </li>
       </ul>
       <button
-        className="text-white inline-flex w-full justify-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        className="text-white inline-flex w-full justify-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center "
         onClick={handleNextStep}
       >
         Next step
@@ -231,14 +231,14 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
           <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
         </div>
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-        <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-gray-700">
+        <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full ">
           <div className="relative p-4 w-full max-h-full">
-            <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-              <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                <h3 className="text-4xl font-bold text-gray-900 dark:text-white">Create a Server</h3>
+            <div className="relative bg-white rounded-lg shadow ">
+              <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t ">
+                <h3 className="text-4xl font-bold text-[--primary-text-color] ">Create a Server</h3>
                 <button
                   type="button"
-                  className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                  className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-[--primary-text-color] rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center "
                   onClick={handleClose}
                 >
                   <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from './FirebaseConfig';
-import { collection, getDocs, doc, getDoc, setDoc, addDoc, query, where, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, onSnapshot, addDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from './provider/AuthProvider';
 
 interface Member {
@@ -46,7 +46,7 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
     const fetchMembers = async () => {
       setLoading(true);
       const membersCollection = collection(db, 'Servers', serverID, 'Members');
-      onSnapshot(membersCollection, async (snapshot) => {
+      const unsubscribe = onSnapshot(membersCollection, async (snapshot) => {
         const membersList: Member[] = [];
         const adminsList: Member[] = [];
         const offlineList: Member[] = [];
@@ -91,6 +91,8 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
         setOfflineMembers(offlineList);
         setLoading(false);
       });
+
+      return () => unsubscribe();
     };
 
     fetchMembers();
@@ -246,38 +248,38 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
   };
 
   return (
-    <div className="bg-gray-800 text-purple-lighter flex-none w-64 pb-6 hidden md:block relative">
-      <div className="text-white mb-2 mt-3 px-4 flex justify-between border-b border-gray-600 py-1 shadow-xl">
+    <div className="bg-[--secondary-bg-color] text-purple-lighter flex-none w-64 pb-6 hidden md:block relative">
+      <div className="text-[--primary-text-color] mb-4 mt-3 px-4 flex justify-between border-b border-gray-600 py-1 shadow-xl">
         <div className="flex-auto">
-          <h1 className="font-semibold text-xl leading-tight mb-1 truncate">Members</h1>
+          <h1 className="font-semibold text-xl leading-tight mb-3 truncate">Members</h1>
         </div>
       </div>
       <div className="mb-4 px-4 text-left">
         {loading ? (
-          <p className="text-gray-400 text-center">Loading member list...</p>
+          <p className="text-[--secondary-text-color] text-center">Loading member list...</p>
         ) : (
           <>
             {owner && (
               <>
-                <h1 className="text-gray-400 font-semibold text-left mb-2 text-sm">OWNER</h1>
+                <h1 className="text-[--secondary-text-color] font-semibold text-left mb-2 text-sm">OWNER</h1>
                 <div className="flex items-center mb-2 cursor-pointer" onClick={() => handleMemberClick(owner.userId)}>
                   <img src={owner.profilePicture} alt="Owner" className="w-10 h-10 rounded-full mr-3" />
                   <div className="flex flex-col">
-                    <span className="font-bold text-white text-left">{owner.serverNickname || owner.displayName}</span>
-                    <span className="text-sm text-gray-400 text-left">{owner.customStatus || (owner.isOnline ? "Online" : "Offline")}</span>
+                    <span className="font-bold text-[--primary-text-color] text-left">{owner.serverNickname || owner.displayName}</span>
+                    <span className="text-sm text-[--secondary-text-color] text-left">{owner.customStatus || (owner.isOnline ? "Online" : "Offline")}</span>
                   </div>
                 </div>
               </>
             )}
             {admins.length > 0 && (
               <>
-                <h1 className="text-gray-400 font-semibold text-left mt-6 mb-2 text-sm">ADMINS</h1>
+                <h1 className="text-[--secondary-text-color] font-semibold text-left mt-6 mb-2 text-sm">ADMINS</h1>
                 {admins.map((admin) => (
                   <div key={admin.userId} className="flex items-center mb-2 cursor-pointer" onClick={() => handleMemberClick(admin.userId)}>
                     <img src={admin.profilePicture} alt="Admin" className="w-10 h-10 rounded-full mr-3" />
                     <div className="flex flex-col">
-                      <span className="font-bold text-white text-left">{admin.serverNickname || admin.displayName}</span>
-                      <span className="text-sm text-gray-400 text-left">{admin.customStatus || (admin.isOnline ? "Online" : "Offline")}</span>
+                      <span className="font-bold text-[--primary-text-color] text-left">{admin.serverNickname || admin.displayName}</span>
+                      <span className="text-sm text-[--secondary-text-color] text-left">{admin.customStatus || (admin.isOnline ? "Online" : "Offline")}</span>
                     </div>
                   </div>
                 ))}
@@ -285,13 +287,13 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
             )}
             {members.length > 0 && (
               <>
-                <h1 className="text-gray-400 font-semibold text-left mt-6 mb-2 text-sm">MEMBERS</h1>
+                <h1 className="text-[--secondary-text-color] font-semibold text-left mt-6 mb-2 text-sm">MEMBERS</h1>
                 {members.map((member) => (
                   <div key={member.userId} className="flex items-center mb-2 cursor-pointer" onClick={() => handleMemberClick(member.userId)}>
                     <img src={member.profilePicture} alt="Member" className="w-10 h-10 rounded-full mr-3" />
                     <div className="flex flex-col">
-                      <span className="font-bold text-white text-left">{member.serverNickname || member.displayName}</span>
-                      <span className="text-sm text-gray-400 text-left">{member.customStatus || (member.isOnline ? "Online" : "Offline")}</span>
+                      <span className="font-bold text-[--primary-text-color] text-left">{member.serverNickname || member.displayName}</span>
+                      <span className="text-sm text-[--secondary-text-color] text-left">{member.customStatus || (member.isOnline ? "Online" : "Offline")}</span>
                     </div>
                   </div>
                 ))}
@@ -299,13 +301,13 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
             )}
             {offlineMembers.length > 0 && (
               <>
-                <h1 className="text-gray-400 font-semibold text-left mt-6 mb-2 text-sm">OFFLINE</h1>
+                <h1 className="text-[--secondary-text-color] font-semibold text-left mt-6 mb-2 text-sm">OFFLINE</h1>
                 {offlineMembers.map((member) => (
                   <div key={member.userId} className="flex items-center mb-2 cursor-pointer" onClick={() => handleMemberClick(member.userId)}>
                     <img src={member.profilePicture} alt="Offline Member" className="w-10 h-10 rounded-full mr-3" />
                     <div className="flex flex-col">
-                      <span className="font-bold text-white text-left">{member.serverNickname || member.displayName}</span>
-                      <span className="text-sm text-gray-400 text-left">{member.customStatus || "Offline"}</span>
+                      <span className="font-bold text-[--primary-text-color] text-left">{member.serverNickname || member.displayName}</span>
+                      <span className="text-sm text-[--secondary-text-color] text-left">{member.customStatus || "Offline"}</span>
                     </div>
                   </div>
                 ))}
@@ -317,26 +319,26 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
 
       {selectedMember && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-gray-800 rounded-lg p-4 max-w-md w-full">
-            <h2 className="text-white text-xl font-bold mb-4">Profile Details</h2>
+          <div className="bg-[--primary-bg-color] rounded-lg p-4 max-w-md w-full">
+            <h2 className="text-[--primary-text-color] text-xl font-bold mb-4">Profile Details</h2>
             <div className="flex items-center mb-4">
               <img src={selectedMember.profilePicture} alt="Profile" className="w-16 h-16 rounded-full mr-4" />
               <div className="flex flex-col">
-                <span className="text-white text-lg font-bold">{selectedMember.serverNickname || selectedMember.displayName}</span>
-                <span className="text-gray-400">@{selectedMember.username}</span>
+                <span className="text-[--primary-text-color] text-lg font-bold">{selectedMember.serverNickname || selectedMember.displayName}</span>
+                <span className="text-[--secondary-text-color]">@{selectedMember.username}</span>
               </div>
             </div>
             {selectedMember.userId === currentUser?.uid && (
               <div className="flex flex-col mb-4">
-                <label className="text-white mb-2" htmlFor="serverNickname">Server Nickname</label>
+                <label className="text-[--primary-text-color] mb-2" htmlFor="serverNickname">Server Nickname</label>
                 <input
                   type="text"
                   id="serverNickname"
-                  className="w-full px-4 py-2 bg-gray-600 text-white rounded mb-2"
+                  className="w-full px-4 py-2 bg-[--secondary-bg-color] text-[--primary-text-color] rounded mb-2"
                   value={serverNickname}
                   onChange={(e) => setServerNickname(e.target.value)}
                 />
-                <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded" onClick={handleServerNicknameChange}>
+                <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] rounded" onClick={handleServerNicknameChange}>
                   Save Nickname
                 </button>
               </div>
@@ -344,36 +346,36 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
             {selectedMember.userId !== currentUser?.uid && (
               <div className="flex flex-col mb-4">
                 {isFriend ? (
-                  <button className="px-4 py-2 bg-green-500 text-white rounded mb-2" disabled>
+                  <button className="px-4 py-2 bg-green-500 text-[--primary-text-color] rounded mb-2" disabled>
                     Already Friends
                   </button>
                 ) : (
-                  <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded mb-2" onClick={() => handleSendFriendRequest(selectedMember.userId)}>
+                  <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] rounded mb-2" onClick={() => handleSendFriendRequest(selectedMember.userId)}>
                     Send Friend Request
                   </button>
                 )}
                 {isBlocked ? (
-                  <button className="px-4 py-2 bg-red-500 hover:bg-red-700 text-white rounded mb-2" onClick={() => handleUnblockUser(selectedMember.userId)}>
+                  <button className="px-4 py-2 bg-red-500 hover:bg-red-700 text-[--primary-text-color] rounded mb-2" onClick={() => handleUnblockUser(selectedMember.userId)}>
                     Unblock User
                   </button>
                 ) : (
-                  <button className="px-4 py-2 bg-red-500 hover:bg-red-700 text-white rounded mb-2" onClick={() => handleBlockUser(selectedMember.userId)}>
+                  <button className="px-4 py-2 bg-red-500 hover:bg-red-700 text-[--primary-text-color] rounded mb-2" onClick={() => handleBlockUser(selectedMember.userId)}>
                     Block User
                   </button>
                 )}
                 <input
                   type="text"
-                  className="w-full px-4 py-2 bg-gray-600 text-white rounded mb-2"
+                  className="w-full px-4 py-2 bg-gray-600 text-[--primary-text-color] rounded mb-2"
                   placeholder="Send a message"
                   value={dmMessage}
                   onChange={(e) => setDmMessage(e.target.value)}
                 />
-                <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded" onClick={handleSendMessage}>
+                <button className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-[--primary-text-color] rounded" onClick={handleSendMessage}>
                   Send Message
                 </button>
               </div>
             )}
-            <button className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded mt-2" onClick={() => setSelectedMember(null)}>
+            <button className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-[--primary-text-color] rounded mt-2" onClick={() => setSelectedMember(null)}>
               Close
             </button>
           </div>

@@ -55,12 +55,12 @@ function ProfileBar() {
   };
 
   return (
-    <div className="absolute bottom-0 left-0 w-full flex items-center justify-between p-4 bg-gray-900 text-gray-100">
+    <div className="absolute bottom-0 left-0 w-full flex items-center justify-between p-4 bg-[--primary-bg-color] text-gray-100">
       <div className="flex items-center">
         <img src={currentUser?.profilePicture || "https://cdn.discordapp.com/embed/avatars/0.png"} alt="User Avatar" className="w-10 h-10 rounded-full" />
         <div className="ml-3">
-          <p className="text-sm font-semibold text-left">{currentUser?.displayName}</p>
-          <p className="text-xs text-gray-400 text-left">{currentUser?.customStatus || (currentUser?.isOnline ? 'Online' : 'Offline')}</p>
+          <p className="text-sm font-semibold text-left text-[--primary-text-color]">{currentUser?.displayName}</p>
+          <p className="text-xs text-[--secondary-text-color] text-left">{currentUser?.customStatus || (currentUser?.isOnline ? 'Online' : 'Offline')}</p>
         </div>
       </div>
       <div className="flex items-center space-x-2">

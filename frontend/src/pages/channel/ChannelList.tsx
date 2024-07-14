@@ -222,24 +222,24 @@ const ChannelList: React.FC<ChannelListProps> = ({
   };
 
   return (
-    <div className="bg-gray-800 text-purple-lighter flex-none w-64 pb-6 hidden md:block relative">
-      <div className="text-white mb-2 mt-3 px-4 flex justify-between border-b border-gray-600 py-1 shadow-xl">
+    <div className="bg-[--secondary-bg-color] text-purple-lighter flex-none w-64 pb-6 hidden md:block relative">
+      <div className="text-[--primary-text-color] mb-2 mt-3 px-4 flex justify-between border-b border-gray-600 py-1 shadow-xl">
         <div className="flex-auto cursor-pointer" onClick={() => setShowDropdown(!showDropdown)}>
-          <h1 className="font-semibold text-xl leading-tight mb-1 truncate">{currentServerName}</h1>
+          <h1 className="font-semibold text-xl leading-tight mb-3 truncate">{currentServerName}</h1>
         </div>
         {showDropdown && (
-          <div className="absolute top-14 left-0 bg-gray-700 border border-gray-600 rounded-lg shadow-lg min-w-60 z-10 ml-2">
+          <div className="absolute top-14 left-0 bg-[--primary-bg-color] border border-gray-600 rounded-lg shadow-lg min-w-60 z-10 ml-2">
             <div className="p-2">
-              <div className="hover:bg-gray-600 p-2 cursor-pointer" onClick={generateInviteLink}>
+              <div className="hover:bg-gray-600 p-2 cursor-pointer text-[--primary-text-color]" onClick={generateInviteLink}>
                 Invite People
               </div>
               {(currentRole === 'owner' || currentRole === 'admin') && (
-                <div className="hover:bg-gray-600 p-2 cursor-pointer" onClick={handleEditServerProfile}>
+                <div className="hover:bg-gray-600 p-2 cursor-pointer text-[--primary-text-color]" onClick={handleEditServerProfile}>
                   Edit Server Profile
                 </div>
               )}
               {currentRole === 'owner' && (
-                <div className="hover:bg-gray-600 p-2 cursor-pointer" onClick={handleEditMemberSettings}>
+                <div className="hover:bg-gray-600 p-2 cursor-pointer text-[--primary-text-color]" onClick={handleEditMemberSettings}>
                   Edit Member Settings
                 </div>
               )}
@@ -258,8 +258,8 @@ const ChannelList: React.FC<ChannelListProps> = ({
         )}
       </div>
       <div className="mb-8">
-        <div className="px-4 mb-2 text-white flex justify-between items-center">
-          <div className="opacity-75 cursor-pointer">TEXT CHANNELS</div>
+        <div className="px-4 mb-2 text-[--primary-text-color] flex justify-between items-center">
+          <div className="opacity-75 cursor-pointer mt-2">TEXT CHANNELS</div>
           {(currentRole === 'owner' || currentRole === 'admin') && (
             <div>
               <svg
@@ -280,7 +280,7 @@ const ChannelList: React.FC<ChannelListProps> = ({
           .map((channel) => (
             <div
               key={channel.id}
-              className="group relative bg-teal-dark cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left flex justify-between items-center"
+              className="mx-2 rounded-md group relative bg-teal-dark hover:bg-[--primary-bg-color] cursor-pointer font-semibold py-1 px-4 text-[--primary-text-color] text-left flex justify-between items-center"
               onClick={() => onChannelSelect(channel.id, channel.name, channel.nsfw || false)}
             >
               <span># {channel.name}</span>
@@ -318,7 +318,7 @@ const ChannelList: React.FC<ChannelListProps> = ({
           ))}
       </div>
       <div className="mb-8">
-        <div className="px-4 mb-2 text-white flex justify-between items-center">
+        <div className="px-4 mb-2 text-[--primary-text-color] flex justify-between items-center">
           <div className="opacity-75 cursor-pointer">VOICE CHANNELS</div>
           {(currentRole === 'owner' || currentRole === 'admin') && (
             <div>
@@ -340,7 +340,7 @@ const ChannelList: React.FC<ChannelListProps> = ({
           .map((channel) => (
             <div key={channel.id}>
               <div
-                className="group relative bg-teal-dark hover:bg-gray-800 cursor-pointer font-semibold py-1 px-4 text-gray-300 text-left flex justify-between items-center"
+                className="mx-2 rounded-md group relative bg-teal-dark hover:bg-[--primary-bg-color] cursor-pointer font-semibold py-1 px-4 text-[--primary-text-color] text-left flex justify-between items-center"
                 onClick={() => onVoiceChannelSelect(channel.id, channel.name)}
               >
                 <span># {channel.name}</span>
@@ -384,7 +384,7 @@ const ChannelList: React.FC<ChannelListProps> = ({
                       ) : (
                         <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
                       )}
-                      <span className="text-gray-300">{participant.username}</span>
+                      <span className="text-[--primary-text-color]">{participant.username}</span>
                     </div>
                   ))
                 ) : (

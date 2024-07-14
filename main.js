@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron/main');
+const { app, BrowserWindow, Tray, Menu, ipcMain, Notification } = require('electron/main');
 const path = require('path');
 const { getDoc, updateDoc, doc } = require('firebase/firestore');
 const { db } = require('./FirebaseConfig'); // Ensure your firebase config is correctly imported
@@ -135,6 +135,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+ipcMain.on('show-notification', (event, { title, body }) => {
+  new Notification({ title, body }).show();
 });
 
 const isSecondInstance = app.requestSingleInstanceLock();

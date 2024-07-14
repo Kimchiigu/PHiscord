@@ -7,7 +7,14 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electron', {
   // Add any Electron APIs you need to expose
   require: (module) => require(module),
-  ipcRenderer: ipcRenderer
+  ipcRenderer: {
+    send: (channel, data) => {
+      let validChannels = ['show-notification'];
+      if (validChannels.includes(channel)) {
+        ipcRenderer.send(channel, data);
+      }
+    },
+  },
 });
 
 

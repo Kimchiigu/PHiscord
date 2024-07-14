@@ -28,11 +28,11 @@ function SettingsSidebar() {
   };
 
   return (
-    <aside className="flex flex-col w-64 h-full px-4 py-8 bg-[var(--bg-color)] border-r border-[var(--border-color)] fixed left-0 top-0 text-[var(--text-color)]">
+    <aside className="flex flex-col w-64 h-full px-4 py-8 bg-[var(--primary-bg-color)] border-r border-[var(--border-color)] fixed left-0 top-0 text-[var(--text-color)]">
       <div className="flex flex-col items-center -mx-2">
         <img className="object-cover w-24 h-24 mx-2 rounded-full" src={currentUser?.profilePicture || "https://cdn.discordapp.com/embed/avatars/0.png"} alt="avatar" />
-        <h4 className="mx-2 mt-2 font-bold text-2xl">{currentUser?.displayName}</h4>
-        <h4 className="mx-2 font-medium text-lg">{currentUser?.username}</h4>
+        <h4 className="mx-2 mt-2 font-bold text-2xl text-[--primary-text-color]">{currentUser?.displayName}</h4>
+        <h4 className="mx-2 font-medium text-lg text-[--secondary-text-color]">{currentUser?.username}</h4>
       </div>
 
       <div className="flex flex-col justify-between flex-1 mt-6">
@@ -41,7 +41,7 @@ function SettingsSidebar() {
             to="general" 
             className={({ isActive }) => 
               `flex items-center px-4 py-2 transition-colors duration-300 transform rounded-lg ${
-                isActive ? 'text-gray-700 bg-gray-100 dark:bg-gray-800 dark:text-gray-200' : 'text-[var(--text-color)] hover:bg-[var(--hover-bg-color)]'
+                isActive ? 'text-gray-700 bg-gray-100' : 'text-[var(--primary-text-color)] hover:bg-[var(--hover-bg-color)]'
               }`
             }
           >
@@ -54,7 +54,7 @@ function SettingsSidebar() {
             to="appearance" 
             className={({ isActive }) => 
               `flex items-center px-4 py-2 mt-5 transition-colors duration-300 transform rounded-lg ${
-                isActive ? 'text-gray-700 bg-gray-100 dark:bg-gray-800 dark:text-gray-200' : 'text-[var(--text-color)] hover:bg-[var(--hover-bg-color)]'
+                isActive ? 'text-gray-700 bg-gray-100' : 'text-[var(--primary-text-color)] hover:bg-[var(--hover-bg-color)]'
               }`
             }
           >
@@ -68,7 +68,7 @@ function SettingsSidebar() {
             to="overlay" 
             className={({ isActive }) => 
               `flex items-center px-4 py-2 mt-5 transition-colors duration-300 transform rounded-lg ${
-                isActive ? 'text-gray-700 bg-gray-100 dark:bg-gray-800 dark:text-gray-200' : 'text-[var(--text-color)] hover:bg-[var(--hover-bg-color)]'
+                isActive ? 'text-gray-700 bg-gray-100' : 'text-[var(--primary-text-color)] hover:bg-[var(--hover-bg-color)]'
               }`
             }
           >
@@ -81,7 +81,7 @@ function SettingsSidebar() {
             to="privacy" 
             className={({ isActive }) => 
               `flex items-center px-4 py-2 mt-5 transition-colors duration-300 transform rounded-lg ${
-                isActive ? 'text-gray-700 bg-gray-100 dark:bg-gray-800 dark:text-gray-200' : 'text-[var(--text-color)] hover:bg-[var(--hover-bg-color)]'
+                isActive ? 'text-gray-700 bg-gray-100' : 'text-[var(--primary-text-color)] hover:bg-[var(--hover-bg-color)]'
               }`
             }
           >
@@ -95,7 +95,7 @@ function SettingsSidebar() {
         <div className="flex flex-col">
           <button
               onClick={handleExit}
-              className="w-full px-4 py-2 mt-6 text-sm font-medium tracking-wide capitalize transition-colors duration-300 transform rounded-lg bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color-hover)] focus:outline-none focus:ring focus:ring-gray-300 focus:ring-opacity-50"
+              className="w-full px-4 py-2 mt-6 text-sm font-medium tracking-wide capitalize transition-colors duration-300 transform rounded-lg bg-[var(--primary-button-color)] text-[var(--primary-text-color)] hover:bg-[var(--primary-button-hover)] focus:outline-none focus:ring focus:ring-gray-300 focus:ring-opacity-50"
               >
               Go Back
           </button>

@@ -13,26 +13,26 @@ const InvitePeopleModal: React.FC<InvitePeopleModalProps> = ({ show, serverName,
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-lg w-96">
-        <h2 className="text-white text-2xl mb-4">Invite People to {serverName}</h2>
-        <p className="text-gray-400 mb-4">Invite your friends to hangout and chill in {serverName}</p>
-        <div className="bg-gray-900 p-2 rounded-lg mb-4">
+      <div className="bg-[--primary-bg-color] p-6 rounded-lg w-96">
+        <h2 className="text-[--primary-text-color] text-2xl mb-4">Invite People to {serverName}</h2>
+        <p className="text-[--secondary-text-color] mb-4">Invite your friends to hangout and chill in {serverName}</p>
+        <div className="bg-[--secondary-bg-color] p-2 rounded-lg mb-4">
           <input
             type="text"
             readOnly
             value={inviteLink}
-            className="bg-transparent text-white w-full focus:outline-none"
+            className="bg-transparent text-[--primary-text-color] w-full focus:outline-none"
           />
         </div>
         <button
           onClick={onCopy}
-          className="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full"
+          className="bg-[--primary-button-color] hover:bg-[--primary-button-hover] text-[--primary-text-color] py-2 px-4 rounded w-full"
         >
           Copy Link
         </button>
         <button
           onClick={onClose}
-          className="mt-4 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded w-full"
+          className="mt-4 bg-[--danger-button] hover:bg-[--danger-button] text-[--primary-text-color] py-2 px-4 rounded w-full"
         >
           Close
         </button>

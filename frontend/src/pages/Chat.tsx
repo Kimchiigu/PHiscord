@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { db, storage } from './FirebaseConfig';
-import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter, where } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter, where, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from './provider/AuthProvider';
 import Message from './Message';
@@ -66,14 +66,16 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
         onSnapshot(messagesQuery, (snapshot) => {
           const filter = new Filter();
-          console.log(nsfw)
-          const messagesList = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            message: nsfw ? doc.data().message : filter.clean(doc.data().message), 
-            timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date(),
-            editedTimestamp: doc.data().editedTimestamp ? doc.data().editedTimestamp.toDate() : undefined
-          })) as MessageData[];
+          const messagesList = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              message: nsfw ? data.message : filter.clean(data.message),
+              timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+              editedTimestamp: data.editedTimestamp ? data.editedTimestamp.toDate() : undefined,
+            };
+          }) as MessageData[];
 
           setMessages(messagesList.reverse());
           setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
@@ -109,7 +111,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
             id: memberData.userId,
             displayName: userData.displayName,
             profilePicture: userData.profilePicture || defaultProfilePicture,
-            serverNickname: nicknameData?.serverNickname
+            serverNickname: nicknameData?.serverNickname,
           };
           membersList.push(member);
         }
@@ -154,15 +156,18 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
       const messageSnapshot = await getDocs(messagesQuery);
       const filter = new Filter();
-      const olderMessages = messageSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        message: nsfw ? doc.data().message : filter.clean(doc.data().message), 
-        timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date(),
-        editedTimestamp: doc.data().editedTimestamp ? doc.data().editedTimestamp.toDate() : undefined
-      })) as MessageData[];
+      const olderMessages = messageSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          message: nsfw ? data.message : filter.clean(data.message),
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+          editedTimestamp: data.editedTimestamp ? data.editedTimestamp.toDate() : undefined,
+        };
+      }) as MessageData[];
 
-      setMessages(prevMessages => [...olderMessages.reverse(), ...prevMessages]);
+      setMessages((prevMessages) => [...olderMessages.reverse(), ...prevMessages]);
       setLastVisible(messageSnapshot.docs[messageSnapshot.docs.length - 1]);
       setLoading(false);
     } catch (error) {
@@ -208,12 +213,42 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       }
     }
 
-    await addDoc(messagesCollection, {
+    const messageData = {
       user: serverNickname,
       message: fileUrl || newMessage,
       timestamp,
       profilePicture: currentUser?.profilePicture || defaultProfilePicture,
+    };
+
+    const messageDoc = await addDoc(messagesCollection, messageData);
+
+    // Create notifications for other users
+    const membersSnapshot = await getDocs(collection(db, 'Servers', serverID, 'Members'));
+    const batch = writeBatch(db);
+    membersSnapshot.forEach((memberDoc) => {
+      const memberData = memberDoc.data();
+      if (memberData.userId !== currentUser?.uid) {
+        const notificationRef = doc(collection(db, 'Notifications'));
+        batch.set(notificationRef, {
+          userId: memberData.userId,
+          type: 'Channel',
+          sender: currentUser?.displayName || 'Anonymous',
+          content: newMessage,
+          docId: messageDoc.id,
+          channelName,
+          timestamp,
+        });
+
+        // Send notification to Electron
+        if (typeof window !== 'undefined' && window.electron) {
+          window.electron.ipcRenderer.send('show-notification', {
+            title: `New message in ${channelName}`,
+            body: newMessage,
+          });
+        }
+      }
     });
+    await batch.commit();
 
     setNewMessage('');
     setSelectedFile(null);
@@ -284,14 +319,14 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       const messageSnapshot = await getDocs(messagesCollection);
 
       const results: MessageData[] = [];
-      messageSnapshot.forEach(doc => {
+      messageSnapshot.forEach((doc) => {
         const messageData = doc.data() as MessageData;
         if (messageData.message.includes(searchQuery)) {
           results.push({
             id: doc.id,
             ...messageData,
             timestamp: messageData.timestamp.toDate(),
-            editedTimestamp: messageData.editedTimestamp ? messageData.editedTimestamp.toDate() : undefined
+            editedTimestamp: messageData.editedTimestamp ? messageData.editedTimestamp.toDate() : undefined,
           });
         }
       });
@@ -310,7 +345,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       const elementOffset = messageElement.offsetTop;
       chatContainerRef.current.scrollTo({
         top: elementOffset - 100,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
       messageElement.classList.add('highlight');
       setTimeout(() => {
@@ -328,17 +363,17 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-700 overflow-hidden relative text-left">
+    <div className="flex-1 flex flex-col bg-[--primary-bg-color] overflow-hidden relative text-left">
       <div className="border-b border-gray-600 flex px-6 py-2 items-center flex-none shadow-xl">
         <div className="flex flex-col">
-          <h3 className="mb-1 font-bold text-xl text-gray-100">
-            <span className="text-gray-400">#</span> {channelName}
+          <h3 className="mb-1 font-bold text-xl text-[--primary-text-color]">
+            <span className="text-[--secondary-text-color]">#</span> {channelName}
           </h3>
         </div>
         <div className="ml-auto flex items-center">
           <input
             type="text"
-            className="w-64 px-4 py-2 bg-gray-600 text-white rounded-lg"
+            className="w-64 px-4 py-2 bg-[--secondary-bg-color] text-[--primary-text-color] rounded-lg"
             placeholder="Search messages"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -347,7 +382,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="ml-2 text-gray-400 hover:text-gray-200"
+              className="ml-2 text-[--secondary-text-color] hover:text-gray-200"
             >
               Cancel
             </button>
@@ -355,27 +390,27 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
         </div>
       </div>
       {searchResults.length > 0 && (
-        <div className="absolute top-16 left-0 right-0 bg-gray-800 p-4 max-h-64 overflow-y-auto z-10 overflow-x-hidden mx-2 rounded-md">
+        <div className="absolute top-16 left-0 right-0 bg-[--secondary-bg-color] p-4 max-h-64 overflow-y-auto z-10 overflow-x-hidden mx-2 rounded-md">
           {searchResults.map(result => (
             <div
               key={result.id}
-              className="text-white cursor-pointer p-2 hover:bg-gray-700"
+              className="text-[--primary-text-color] rounded-md cursor-pointer p-2 hover:bg-[--tersier-bg-color]"
               onClick={() => handleSelectSearchResult(result.id)}
             >
               <p><strong>{result.user}:</strong> {result.message}</p>
-              <span className="text-gray-400 text-xs">{new Date(result.timestamp).toLocaleString()}</span>
+              <span className="text-[--secondary-text-color] text-xs">{new Date(result.timestamp).toLocaleString()}</span>
             </div>
           ))}
         </div>
       )}
       {searchResults.length === 0 && searchQuery && (
-        <div className="absolute top-16 left-0 right-0 bg-gray-800 p-4 z-10 mx-3 rounded-md">
-          <p className="text-white text-center">No Result Found!</p>
+        <div className="absolute top-16 left-0 right-0 bg-[--secondary-bg-color] p-4 z-10 mx-3 rounded-md">
+          <p className="text-[--primary-text-color] text-center">No Result Found!</p>
         </div>
       )}
       <div className="px-6 py-4 flex-1 overflow-y-scroll" onScroll={handleScroll} ref={chatContainerRef}>
         {loading ? (
-          <p className="text-gray-400 text-center">Loading messages...</p>
+          <p className="text-[--secondary-text-color] text-center">Loading messages...</p>
         ) : (
           messages.map((msg) => (
             <Message
@@ -398,19 +433,19 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
         )}
       </div>
       {showDeleteModal.visible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h2 className="text-white mb-4">Are you sure you want to delete this message?</h2>
+        <div className="fixed inset-0 bg-black z-50 bg-opacity-50 flex items-center justify-center">
+          <div className="bg-[--primary-bg-color] p-4 rounded-lg">
+            <h2 className="text-[--primary-text-color] mb-4">Are you sure you want to delete this message?</h2>
             <div className="flex justify-end">
               <button
                 onClick={() => setShowDeleteModal({ id: '', visible: false })}
-                className="text-gray-400 hover:text-gray-200 mr-4"
+                className="text-[--secondary-text-color] hover:text-gray-200 mr-4"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteMessage(showDeleteModal.id)}
-                className="bg-red-500 hover:bg-red-700 text-white py-1 px-3 rounded"
+                className="bg-red-500 hover:bg-red-700 text-[--primary-text-color] py-1 px-3 rounded"
               >
                 Delete
               </button>
@@ -452,7 +487,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
                     />
                   </svg>
                 </div>
-                <div className="text-white">
+                <div className="text-[--primary-text-color]">
                   {selectedFile?.name}
                 </div>
               </div>
@@ -460,19 +495,19 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
           </div>
         )}
         <div className="flex rounded-lg overflow-hidden mt-2">
-          <span className="text-3xl text-grey border-r-4 border-gray-600 bg-gray-600 p-2 cursor-pointer" onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}>
+          <span className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer" onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}>
             😊
           </span>
-            {emojiTrayVisible && (
-              <div className="absolute bottom-16 bg-gray-600 p-2 rounded shadow-lg grid grid-cols-5 gap-2">
-                {emojis.map(emoji => (
-                  <span key={emoji} className="text-2xl cursor-pointer" onClick={() => handleSelectEmoji(emoji)}>{emoji}</span>
-                ))}
-              </div>
-            )}
+          {emojiTrayVisible && (
+            <div className="absolute bottom-16 bg-[--secondary-bg-color] p-2 rounded shadow-lg grid grid-cols-5 gap-2">
+              {emojis.map(emoji => (
+                <span key={emoji} className="text-2xl cursor-pointer" onClick={() => handleSelectEmoji(emoji)}>{emoji}</span>
+              ))}
+            </div>
+          )}
           <input
             type="text"
-            className="w-full px-4 bg-gray-600 text-white"
+            className="w-full px-4 bg-[--secondary-bg-color] text-[--primary-text-color]"
             placeholder={`Message #${channelName}`}
             value={newMessage}
             onChange={(e) => {
@@ -487,10 +522,10 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
             id="fileInput"
             onChange={handleFileChange}
           />
-          <label htmlFor="fileInput" className="text-3xl text-grey border-r-4 border-gray-600 bg-gray-600 p-2 cursor-pointer">
+          <label htmlFor="fileInput" className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer">
             📎
           </label>
-          <span className="text-3xl text-grey border-r-4 border-gray-600 bg-gray-600 p-2 cursor-pointer" onClick={handleSendMessage}>
+          <span className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer" onClick={handleSendMessage}>
             📤
           </span>
         </div>
@@ -501,4 +536,3 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 };
 
 export default Chat;
-

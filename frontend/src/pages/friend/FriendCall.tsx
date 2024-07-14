@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../provider/AuthProvider';
-import AgoraRTC, { IAgoraRTCRemoteUser, IMicrophoneAudioTrack, ICameraVideoTrack } from 'agora-rtc-sdk-ng';
+import AgoraRTC, { IAgoraRTCRemoteUser, IMicrophoneAudioTrack, ICameraVideoTrack, IRemoteVideoTrack } from 'agora-rtc-sdk-ng';
 import axios from 'axios';
 import { doc, updateDoc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '../FirebaseConfig';
@@ -25,7 +25,8 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
   const [friendProfilePicture, setFriendProfilePicture] = useState<string | null>(null);
   const [callAccepted, setCallAccepted] = useState(false);
   const [waitingForApproval, setWaitingForApproval] = useState(true);
-  const [remoteVideoTrack, setRemoteVideoTrack] = useState<ICameraVideoTrack | null>(null);
+  const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
+  const remotePlayerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!client.current) {
@@ -36,9 +37,10 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
           await client.current.subscribe(user, mediaType);
         }
         if (mediaType === 'video') {
-          const videoTrack = user.videoTrack;
-          setRemoteVideoTrack(videoTrack);
-          videoTrack?.play('remote-player');
+          const videoTrack = user.videoTrack as IRemoteVideoTrack | undefined;
+          if (videoTrack) {
+            setRemoteVideoTrack(videoTrack);
+          }
         }
         if (mediaType === 'audio') {
           const remoteAudioTrack = user.audioTrack;
@@ -84,6 +86,33 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
     fetchFriendData();
   }, [friendId, currentUser]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const userDocRef = doc(db, 'Users', currentUser.uid);
+    const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        setIsMuted(userData.isMuted || false);
+        setIsDeafened(userData.isDeafened || false);
+        if (localAudioTrack.current) {
+          localAudioTrack.current.setEnabled(!userData.isMuted);
+        }
+        if (client.current) {
+          client.current.remoteUsers.forEach(user => {
+            if (userData.isDeafened) {
+              user.audioTrack?.stop();
+            } else {
+              user.audioTrack?.play();
+            }
+          });
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
   const startCall = useCallback(async () => {
     if (!currentUser) return;
 
@@ -95,13 +124,10 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
       localAudioTrack.current = await AgoraRTC.createMicrophoneAudioTrack();
       if (callType === 'video') {
         localVideoTrack.current = await AgoraRTC.createCameraVideoTrack();
-      }
-
-      await client.current.publish([localAudioTrack.current]);
-
-      if (callType === 'video' && localVideoTrack.current) {
-        await client.current.publish([localVideoTrack.current]);
+        await client.current.publish([localAudioTrack.current, localVideoTrack.current]);
         localVideoTrack.current.play('local-player');
+      } else {
+        await client.current.publish([localAudioTrack.current]);
       }
 
       setWaitingForApproval(true);
@@ -114,8 +140,18 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
           type: callType,
         },
       });
+
+      if (isMuted) {
+        localAudioTrack.current.setEnabled(false);
+      }
+
+      if (isDeafened) {
+        client.current.remoteUsers.forEach(user => {
+          user.audioTrack?.stop();
+        });
+      }
     }
-  }, [callType, currentUser, friendId, dmDocId]);
+  }, [callType, currentUser, friendId, dmDocId, isMuted, isDeafened]);
 
   useEffect(() => {
     startCall();
@@ -137,20 +173,26 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
     };
   }, [startCall, dmDocId]);
 
-  const handleMute = () => {
-    if (localAudioTrack.current) {
-      if (isMuted) {
-        localAudioTrack.current.setEnabled(true);
-        setIsMuted(false);
-      } else {
-        localAudioTrack.current.setEnabled(false);
-        setIsMuted(true);
-      }
+  useEffect(() => {
+    if (remoteVideoTrack && remotePlayerRef.current) {
+      remoteVideoTrack.play(remotePlayerRef.current);
+    }
+  }, [remoteVideoTrack]);
+
+  const handleMute = async () => {
+    if (localAudioTrack.current && currentUser) {
+      const newMuteState = !isMuted;
+      localAudioTrack.current.setEnabled(!newMuteState);
+      setIsMuted(newMuteState);
+
+      await updateDoc(doc(db, 'Users', currentUser.uid), {
+        isMuted: newMuteState
+      });
     }
   };
 
-  const handleVideoToggle = () => {
-    if (localVideoTrack.current) {
+  const handleVideoToggle = async () => {
+    if (localVideoTrack.current && currentUser) {
       if (isVideoOn) {
         localVideoTrack.current.setEnabled(false);
         localVideoTrack.current.stop();
@@ -160,22 +202,30 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
         localVideoTrack.current.play('local-player');
         setIsVideoOn(true);
       }
+
+      await updateDoc(doc(db, 'Users', currentUser.uid), {
+        isVideoOn: !isVideoOn
+      });
     }
   };
 
-  const handleDeafen = () => {
-    if (client.current) {
-      if (isDeafened) {
-        client.current.remoteUsers.forEach(user => {
-          user.audioTrack?.play();
-        });
-        setIsDeafened(false);
-      } else {
+  const handleDeafen = async () => {
+    if (client.current && currentUser) {
+      const newDeafenState = !isDeafened;
+      if (newDeafenState) {
         client.current.remoteUsers.forEach(user => {
           user.audioTrack?.stop();
         });
-        setIsDeafened(true);
+      } else {
+        client.current.remoteUsers.forEach(user => {
+          user.audioTrack?.play();
+        });
       }
+      setIsDeafened(newDeafenState);
+
+      await updateDoc(doc(db, 'Users', currentUser.uid), {
+        isDeafened: newDeafenState
+      });
     }
   };
 
@@ -195,12 +245,12 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
   };
 
   return (
-    <div className="flex flex-col items-center justify-center bg-gray-950 h-full w-full">
+    <div className="flex flex-col items-center justify-center bg-[--bg-color] h-full w-full">
       {waitingForApproval ? (
-        <p className="text-gray-400">Waiting for approval...</p>
+        <p className="text-[--secondary-text-color]">Waiting for approval...</p>
       ) : callAccepted ? (
         <>
-          <div id="local-player" className="w-2/3 h-64 bg-gray-900 rounded-xl flex justify-center items-center">
+          <div id="local-player" className="w-2/3 h-64 bg-[--primary-bg-color] rounded-xl flex justify-center items-center">
             {!isVideoOn && profilePicture && (
               <div className="flex flex-row items-center justify-center">
                 <img src={profilePicture} alt="Your Profile" className="w-40 h-40 object-cover rounded-full mr-16" />
@@ -209,7 +259,7 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
             )}
           </div>
           {remoteVideoTrack && (
-            <div id="remote-player" className="w-full h-64 bg-gray-900"></div>
+            <div id="remote-player" ref={remotePlayerRef} className="w-full h-64 bg-[--primary-bg-color]"></div>
           )}
           <div className="flex space-x-2 mt-4">
             <button className="bg-blue-500 text-white px-4 py-2 rounded-lg" onClick={handleMute}>{isMuted ? 'Unmute' : 'Mute'}</button>
@@ -219,7 +269,7 @@ const FriendCall: React.FC<FriendCallProps> = ({ friendId, callType, dmDocId, on
           </div>
         </>
       ) : (
-        <p className="text-gray-400">Call ended</p>
+        <p className="text-[--secondary-text-color]">Call ended</p>
       )}
     </div>
   );

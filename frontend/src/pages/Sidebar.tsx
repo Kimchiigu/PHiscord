@@ -67,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onServerSelect, onDmSelect }) => {
   };
 
   return (
-    <div className="bg-gray-900 text-purple-lighter flex-none w-24 p-6 hidden md:block">
+    <div className="bg-[--primary-bg-color] text-purple-lighter flex-none w-24 p-6 hidden md:block">
       <div className="cursor-pointer mb-4 border-b border-gray-600 pb-2">
         <div className="bg-white h-12 w-12 flex items-center justify-center text-black text-2xl font-semibold rounded-3xl mb-1 overflow-hidden" onClick={onDmSelect}>
           {/* make the direct message in here */}
@@ -83,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onServerSelect, onDmSelect }) => {
           />
         ))
       ) : (
-        <p className="text-gray-400 pt-3 pb-8">No servers yet</p>
+        <p className="text-[--primary-text-color] pt-3 pb-8">No servers yet</p>
       )}
 
       <div className="cursor-pointer" onClick={handleAddServerClick}>

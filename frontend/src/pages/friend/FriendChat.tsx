@@ -3,7 +3,10 @@ import { db, storage } from '../FirebaseConfig';
 import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../provider/AuthProvider';
+import { useToast } from '../provider/ToastProvider';
 import Message from '../Message';
+
+const { ipcRenderer } = window.require ? window.require('electron') : { ipcRenderer: null };
 
 interface MessageData {
   id: string;
@@ -16,6 +19,7 @@ interface MessageData {
 
 const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   const { currentUser } = useAuth();
+  const { showToast } = useToast();
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -122,6 +126,29 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
     fetchFriendDisplayName();
   }, [friendId]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(collection(db, 'Notifications'), where('userId', '==', currentUser.uid));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      querySnapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const notification = change.doc.data();
+          showToast(`New message from ${notification.sender}`, 'info');
+          
+          if (ipcRenderer) {
+            ipcRenderer.send('show-notification', {
+              title: 'Direct Message',
+              body: `New message from ${notification.sender}`,
+            });
+          }
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, showToast]);
+
   const fetchOlderMessages = async () => {
     if (!lastVisible || !dmId) return;
 
@@ -163,30 +190,57 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
       console.error('DM ID or current user is not defined');
       return;
     }
-
+  
     if (newMessage.trim() === '' && !selectedFile) return;
     const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
     const timestamp = new Date();
     let fileUrl = '';
-
+  
     if (selectedFile) {
       const fileRef = ref(storage, `files/${dmId}/${selectedFile.name}`);
       await uploadBytes(fileRef, selectedFile);
       fileUrl = await getDownloadURL(fileRef);
     }
-
+  
     await addDoc(messagesCollection, {
       user: currentUser.displayName || 'Anonymous',
       message: fileUrl || newMessage,
       timestamp,
       profilePicture: currentUser.profilePicture || defaultProfilePicture,
     });
-
+  
+    // Notify friend
+    await addDoc(collection(db, 'Notifications'), {
+      userId: friendId,
+      type: 'DM',
+      sender: currentUser.displayName || 'Anonymous',
+      content: fileUrl || newMessage,
+      docId: dmId,
+      timestamp,
+    });
+  
+    // Show toast to the receiver
+    const receiverDoc = await getDoc(doc(db, 'Users', friendId));
+    if (receiverDoc.exists()) {
+      const receiverData = receiverDoc.data();
+      if (receiverData?.uid === friendId) {
+        showToast(`New message from ${currentUser.displayName || 'Anonymous'}`, 'info');
+  
+        if (ipcRenderer) {
+          ipcRenderer.send('show-notification', {
+            title: 'Direct Message',
+            body: `New message from ${currentUser.displayName || 'Anonymous'}`,
+          });
+        }
+      }
+    }
+  
     setNewMessage('');
     setSelectedFile(null);
     setFilePreview(null);
     scrollToBottom();
   };
+  
 
   const handleSelectEmoji = (emoji: string) => {
     setNewMessage(newMessage + emoji);
@@ -290,17 +344,17 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-700 overflow-hidden relative text-left">
-      <div className="border-b border-gray-600 flex px-6 py-2 items-center flex-none shadow-xl">
+    <div className="flex-1 flex flex-col bg-[--primary-bg-color] overflow-hidden relative text-left">
+      <div className="border-b border-[--secondary-bg-color] flex px-6 py-2 items-center flex-none shadow-xl">
         <div className="flex flex-col">
-          <h3 className="mb-1 font-bold text-xl text-gray-100">
+          <h3 className="mb-1 font-bold text-xl text-[--primary-text-color]">
             {friendDisplayName}
           </h3>
         </div>
         <div className="ml-auto flex items-center">
           <input
             type="text"
-            className="w-64 px-4 py-2 bg-gray-600 text-white rounded-lg"
+            className="w-64 px-4 py-2 bg-[--secondary-bg-color] text-[--primary-text-color] rounded-lg"
             placeholder="Search messages"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -309,7 +363,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="ml-2 text-gray-400 hover:text-gray-200"
+              className="ml-2 text-[--secondary-text-color] hover:text-gray-200"
             >
               Cancel
             </button>
@@ -317,27 +371,27 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
         </div>
       </div>
       {searchResults.length > 0 && (
-        <div className="absolute top-16 left-0 right-0 bg-gray-800 p-4 max-h-64 overflow-y-auto z-10 overflow-x-hidden mx-2 rounded-md">
+        <div className="absolute top-16 left-0 right-0 bg-[--secondary-bg-color] p-4 max-h-64 overflow-y-auto z-10 overflow-x-hidden mx-2 rounded-md">
           {searchResults.map(result => (
             <div
               key={result.id}
-              className="text-white cursor-pointer p-2 hover:bg-gray-700"
+              className="text-[--primary-text-color] cursor-pointer p-2 hover:bg-[--primary-bg-color]"
               onClick={() => handleSelectSearchResult(result.id)}
             >
               <p><strong>{result.user}:</strong> {result.message}</p>
-              <span className="text-gray-400 text-xs">{new Date(result.timestamp).toLocaleString()}</span>
+              <span className="text-[--secondary-text-color] text-xs">{new Date(result.timestamp).toLocaleString()}</span>
             </div>
           ))}
         </div>
       )}
       {searchResults.length === 0 && searchQuery && (
-        <div className="absolute top-16 left-0 right-0 bg-gray-800 p-4 z-10 mx-3 rounded-md">
-          <p className="text-white text-center">No Result Found!</p>
+        <div className="absolute top-16 left-0 right-0 bg-[--secondary-bg-color] p-4 z-10 mx-3 rounded-md">
+          <p className="text-[--primary-text-color] text-center">No Result Found!</p>
         </div>
       )}
       <div className="px-6 py-4 flex-1 overflow-y-scroll" onScroll={handleScroll} ref={chatContainerRef}>
         {loading ? (
-          <p className="text-gray-400 text-center">Loading messages...</p>
+          <p className="text-[--secondary-text-color] text-center">Loading messages...</p>
         ) : (
           messages.map((msg) => (
             <Message
@@ -356,19 +410,19 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
         )}
       </div>
       {showDeleteModal.visible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h2 className="text-white mb-4">Are you sure you want to delete this message?</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-[--secondary-bg-color] p-4 rounded-lg">
+            <h2 className="text-[--primary-text-color] mb-4">Are you sure you want to delete this message?</h2>
             <div className="flex justify-end">
               <button
                 onClick={() => setShowDeleteModal({ id: '', visible: false })}
-                className="text-gray-400 hover:text-gray-200 mr-4"
+                className="text-[--secondary-text-color] hover:text-gray-200 mr-4"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteMessage(showDeleteModal.id)}
-                className="bg-red-500 hover:bg-red-700 text-white py-1 px-3 rounded"
+                className="bg-red-500 hover:bg-red-700 text-[--primary-text-color] py-1 px-3 rounded"
               >
                 Delete
               </button>
@@ -378,7 +432,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
       )}
       <div className="pb-6 px-4 flex-none relative">
         {filePreview && (
-          <div className="mt-2 p-2 bg-gray-800 rounded-lg relative">
+          <div className="mt-2 p-2 bg-[--secondary-bg-color] rounded-lg relative">
             <button
               onClick={handleCancelUpload}
               className="absolute top-2 right-2 text-red-500 hover:text-red-700"
@@ -410,7 +464,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
                     />
                   </svg>
                 </div>
-                <div className="text-white">
+                <div className="text-[--primary-text-color]">
                   {selectedFile?.name}
                 </div>
               </div>
@@ -418,11 +472,11 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
           </div>
         )}
         <div className="flex rounded-lg overflow-hidden mt-2">
-          <span className="text-3xl text-grey border-r-4 border-gray-600 bg-gray-600 p-2 cursor-pointer" onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}>
+          <span className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer" onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}>
             😊
           </span>
           {emojiTrayVisible && (
-            <div className="absolute bottom-16 bg-gray-600 p-2 rounded shadow-lg grid grid-cols-5 gap-2">
+            <div className="absolute bottom-16 bg-[--secondary-bg-color] p-2 rounded shadow-lg grid grid-cols-5 gap-2">
               {emojis.map(emoji => (
                 <span key={emoji} className="text-2xl cursor-pointer" onClick={() => handleSelectEmoji(emoji)}>{emoji}</span>
               ))}
@@ -430,7 +484,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
           )}
           <input
             type="text"
-            className="w-full px-4 bg-gray-600 text-white"
+            className="w-full px-4 bg-[--secondary-bg-color] text-[--primary-text-color]"
             placeholder={`Message @${friendDisplayName}`}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
@@ -442,10 +496,10 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
             id="fileInput"
             onChange={handleFileChange}
           />
-          <label htmlFor="fileInput" className="text-3xl text-grey border-r-4 border-gray-600 bg-gray-600 p-2 cursor-pointer">
+          <label htmlFor="fileInput" className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer">
             📎
           </label>
-          <span className="text-3xl text-grey border-r-4 border-gray-600 bg-gray-600 p-2 cursor-pointer" onClick={handleSendMessage}>
+          <span className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer" onClick={handleSendMessage}>
             📤
           </span>
         </div>

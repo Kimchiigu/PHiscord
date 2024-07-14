@@ -15,9 +15,9 @@ import { ThemeProvider } from "./pages/provider/ThemeProvider";
 function App() {
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ToastProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <ThemeProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Login />} />
@@ -33,9 +33,9 @@ function App() {
               </Route>
             </Routes>
           </BrowserRouter>
-        </ToastProvider>
-      </AuthProvider>
-    </ThemeProvider>
+        </ThemeProvider>
+      </ToastProvider>
+    </AuthProvider>
   )
 }
 

@@ -36,9 +36,9 @@ const FriendProfile: React.FC<FriendProfileProps> = ({ friendId, onCallInitiate 
   }, [friendId]);
 
   return (
-    <div className="bg-gray-800 text-purple-lighter flex-none w-64 pb-6 hidden md:block relative">
+    <div className="bg-[--secondary-bg-color] text-purple-lighter flex-none w-64 pb-6 hidden md:block relative">
       {loading ? (
-        <p className="text-gray-400 text-center">Loading...</p>
+        <p className="text-[--secondary-text-color] text-center">Loading...</p>
       ) : (
         friendData && (
           <div className="p-4">
@@ -47,8 +47,8 @@ const FriendProfile: React.FC<FriendProfileProps> = ({ friendId, onCallInitiate 
               alt="Profile"
               className="w-32 h-32 rounded-full mx-auto mb-4"
             />
-            <h2 className="text-white text-xl text-center">{friendData.displayName}</h2>
-            <p className="text-gray-400 text-center">{friendData.customStatus || friendData.isOnline ? "Online" : "Offline"}</p>
+            <h2 className="text-[--primary-text-color] text-xl text-center">{friendData.displayName}</h2>
+            <p className="text-[--secondary-text-color] text-center">{friendData.customStatus || friendData.isOnline ? "Online" : "Offline"}</p>
             <div className="flex flex-col">
               <button
                 className='bg-indigo-500 text-gray-100 rounded-md py-2 mt-3 mb-2 hover:bg-indigo-600 transition-all'

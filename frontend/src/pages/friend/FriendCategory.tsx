@@ -182,13 +182,13 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
   };
 
   return (
-    <div className="bg-gray-800 text-purple-lighter w-full pb-6 md:block relative flex-1 flex flex-col items-center pt-12">
+    <div className="bg-[--bg-color] text-purple-lighter w-full pb-6 md:block relative flex-1 flex flex-col items-center pt-12">
       <div className="flex w-full justify-center">
-        <ul className="flex space-x-4 text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
+        <ul className="flex space-x-4 text-sm font-medium text-gray-500 dark:text-[--secondary-text-color] mb-4">
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'online' ? 'bg-blue-700 text-white dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-white'}`}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'online' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
               onClick={() => setSelectedTab('online')}
             >
               Online
@@ -197,7 +197,7 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'all' ? 'bg-blue-700 text-white dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-white'}`}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'all' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
               onClick={() => setSelectedTab('all')}
             >
               All
@@ -206,7 +206,7 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'pending' ? 'bg-blue-700 text-white dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-white'}`}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'pending' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
               onClick={() => setSelectedTab('pending')}
             >
               Pending
@@ -215,7 +215,7 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'blocked' ? 'bg-blue-700 text-white dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-white'}`}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'blocked' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
               onClick={() => setSelectedTab('blocked')}
             >
               Blocked
@@ -224,7 +224,7 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'addFriend' ? 'bg-blue-700 text-white dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-white'}`}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'addFriend' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
               onClick={() => setSelectedTab('addFriend')}
             >
               Add Friend
@@ -232,7 +232,7 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           </li>
         </ul>
       </div>
-      <div className="p-6 bg-gray-700 text-medium text-gray-500 dark:text-gray-400 dark:bg-gray-800 rounded-lg w-full">
+      <div className="p-6 bg-[--primary-bg-color] text-medium text-[--secondary-text-color] rounded-lg w-[90%] ml-12">
         {loading ? (
           <p className="text-center">Loading...</p>
         ) : friends.length === 0 ? (
@@ -246,11 +246,11 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
                   placeholder="Enter user ID"
                   value={newFriendId}
                   onChange={(e) => setNewFriendId(e.target.value)}
-                  className="px-4 py-2 rounded bg-gray-600 text-white w-full mb-4"
+                  className="px-4 py-2 rounded bg-gray-600 text-[--primary-text-color] w-full mb-4"
                 />
                 <button
                   onClick={handleAddFriend}
-                  className="px-4 py-2 rounded bg-blue-600 text-white"
+                  className="px-4 py-2 rounded bg-blue-600 text-[--primary-text-color]"
                 >
                   Add Friend
                 </button>
@@ -261,13 +261,13 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
                   <div className="flex items-center">
                     <img src={friend.profilePicture} alt="Profile" className="w-10 h-10 rounded-full mr-4" />
                     <div>
-                      <p className="text-gray-100 text-left">{friend.displayName}</p>
-                      <p className="text-gray-400 text-sm text-left">{friend.customStatus || (friend.isOnline ? "Online" : "Offline")}</p>
+                      <p className="text-[--primary-text-color] text-left">{friend.displayName}</p>
+                      <p className="text-[--secondary-text-color] text-sm text-left">{friend.customStatus || (friend.isOnline ? "Online" : "Offline")}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <button onClick={() => handleAcceptFriendRequest(friend.id, friend.senderId)} className="px-3 py-1 rounded bg-green-600 text-white">Accept</button>
-                    <button onClick={() => handleDeclineFriendRequest(friend.id)} className="px-3 py-1 rounded bg-red-600 text-white">Decline</button>
+                    <button onClick={() => handleAcceptFriendRequest(friend.id, friend.senderId)} className="px-3 py-1 rounded bg-green-600 text-[--primary-text-color]">Accept</button>
+                    <button onClick={() => handleDeclineFriendRequest(friend.id)} className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]">Decline</button>
                   </div>
                 </div>
               ))
@@ -277,17 +277,17 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
                   <div className="flex items-center">
                     <img src={friend.profilePicture} alt="Profile" className="w-10 h-10 rounded-full mr-4" />
                     <div>
-                      <p className="text-gray-100 text-left">{friend.displayName || friend.userId}</p>
-                      <p className="text-gray-400 text-sm text-left">{friend.customStatus || (friend.isOnline ? "Online" : "Offline")}</p>
+                      <p className="text-[--primary-text-color] text-left">{friend.displayName || friend.userId}</p>
+                      <p className="text-[--secondary-text-color] text-sm text-left">{friend.customStatus || (friend.isOnline ? "Online" : "Offline")}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
                   {selectedTab === 'blocked' ? (
-                      <button onClick={() => handleUnblockUser(friend.id)} className="px-3 py-1 rounded bg-red-600 text-white">Unblock</button>
+                      <button onClick={() => handleUnblockUser(friend.id)} className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]">Unblock</button>
                     ) : (
                       <>
-                        <button onClick={() => handleRemoveFriend(friend.id)} className="px-3 py-1 rounded bg-red-600 text-white">Remove</button>
-                        <button onClick={() => handleBlockFriend(friend.id)} className="px-3 py-1 rounded bg-purple-600 text-white">Block</button>
+                        <button onClick={() => handleRemoveFriend(friend.id)} className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]">Remove</button>
+                        <button onClick={() => handleBlockFriend(friend.id)} className="px-3 py-1 rounded bg-purple-600 text-[--primary-text-color]">Block</button>
                       </>
                     )}
                   </div>
