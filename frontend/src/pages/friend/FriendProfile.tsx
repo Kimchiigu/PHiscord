@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 
 interface FriendProfileProps {

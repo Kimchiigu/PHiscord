@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 import { addDoc, collection } from 'firebase/firestore';
 
 interface CreateChannelModalProps {

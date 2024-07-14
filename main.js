@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, Notification } = require('electron/main');
+const { app, BrowserWindow, Tray, Menu, ipcMain, Notification } = require('electron');
 const path = require('path');
 const { getDoc, updateDoc, doc } = require('firebase/firestore');
 const { db } = require('./FirebaseConfig'); // Ensure your firebase config is correctly imported
@@ -11,11 +11,11 @@ async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 600,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: false, // Disable context isolation
-      enableRemoteModule: true, // Enable remote module
-      nodeIntegration: true // Enable Node.js integration
+      contextIsolation: true, // Enable context isolation for security
+      nodeIntegration: false, // Disable Node.js integration
     },
     title: 'PHiscord',
     icon: path.join(__dirname, 'assets/phiscord-logo.ico'),
@@ -139,6 +139,29 @@ app.on('window-all-closed', () => {
 
 ipcMain.on('show-notification', (event, { title, body }) => {
   new Notification({ title, body }).show();
+});
+
+ipcMain.on('window-control', (event, action) => {
+  const window = BrowserWindow.getFocusedWindow();
+  if (!window) return;
+
+  switch (action) {
+    case 'minimize':
+      window.minimize();
+      break;
+    case 'maximize':
+      if (window.isMaximized()) {
+        window.unmaximize();
+      } else {
+        window.maximize();
+      }
+      break;
+    case 'close':
+      window.close();
+      break;
+    default:
+      break;
+  }
 });
 
 const isSecondInstance = app.requestSingleInstanceLock();

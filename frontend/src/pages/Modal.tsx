@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from './provider/AuthProvider';
-import { db, storage } from './FirebaseConfig';
+import { db, storage } from '../FirebaseConfig';
 import { addDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';

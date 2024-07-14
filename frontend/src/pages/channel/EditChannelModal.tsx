@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 import { updateDoc, doc, getDoc } from 'firebase/firestore';
 
 interface EditChannelModalProps {

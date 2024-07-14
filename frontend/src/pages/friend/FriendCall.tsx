@@ -3,7 +3,7 @@ import { useAuth } from '../provider/AuthProvider';
 import AgoraRTC, { IAgoraRTCRemoteUser, IMicrophoneAudioTrack, ICameraVideoTrack, IRemoteVideoTrack } from 'agora-rtc-sdk-ng';
 import axios from 'axios';
 import { doc, updateDoc, onSnapshot, getDoc } from 'firebase/firestore';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 
 interface FriendCallProps {
   friendId: string;

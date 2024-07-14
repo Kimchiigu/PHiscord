@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './provider/AuthProvider';
 import { useState, useEffect } from 'react';
 import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
-import { db } from './FirebaseConfig';
+import { db } from '../FirebaseConfig';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faMicrophoneSlash, faVolumeUp, faVolumeMute, faCog } from '@fortawesome/free-solid-svg-icons';
 

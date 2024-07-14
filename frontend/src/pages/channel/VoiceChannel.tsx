@@ -4,7 +4,7 @@ import { useAuth } from '../provider/AuthProvider';
 import axios from 'axios';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 
 interface Participant {
   uid: string;

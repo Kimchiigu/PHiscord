@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../provider/ThemeProvider';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 import { getAuth } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 

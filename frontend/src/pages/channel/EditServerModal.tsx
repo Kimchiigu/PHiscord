@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db, storage } from '../FirebaseConfig';
+import { db, storage } from '../../FirebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface EditServerModalProps {

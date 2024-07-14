@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 import { collection, getDocs, doc, updateDoc, deleteDoc, getDoc, query, where } from 'firebase/firestore';
 
 interface EditMemberModalProps {

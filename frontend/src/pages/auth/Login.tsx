@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from "../FirebaseConfig";
+import { auth } from "../../FirebaseConfig";
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 import { useToast } from '../provider/ToastProvider'; // Import the useToast hook
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

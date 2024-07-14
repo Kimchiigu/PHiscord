@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../provider/AuthProvider';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const PrivacySettings = () => {
