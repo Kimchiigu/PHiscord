@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
 import { collection, doc, getDoc, getDocs, query, where, onSnapshot, addDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { useAuth } from './provider/AuthProvider';
+import { useAuth } from '../provider/AuthProvider';
 
 interface Member {
   userId: string;

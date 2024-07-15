@@ -58,7 +58,7 @@ async function createTray() {
       }
     ]);
 
-    tray.setToolTip('This is my application.');
+    tray.setToolTip('PHiscord');
     tray.setContextMenu(contextMenu);
   } catch (error) {
     console.error('Failed to fetch the icon image:', error);

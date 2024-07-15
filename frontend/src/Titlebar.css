@@ -1,7 +1,7 @@
 /* Titlebar.css */
 .title-bar {
   width: 100%;
-  height: 30px;
+  height: 33px;
   display: flex;
   justify-content: space-between;
   align-items: center;

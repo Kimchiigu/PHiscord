@@ -4,7 +4,7 @@ import { collection, query, where, onSnapshot, updateDoc, doc, getDocs, getDoc }
 import '../App.css';
 import Sidebar from './Sidebar';
 import ChannelList from './channel/ChannelList';
-import MemberList from './MemberList';
+import MemberList from './channel/MemberList';
 import Chat from './Chat';
 import FriendList from './friend/FriendList';
 import FriendChat from './friend/FriendChat';
@@ -12,7 +12,7 @@ import FriendProfile from './friend/FriendProfile';
 import FriendCategory from './friend/FriendCategory';
 import VoiceChannel from './channel/VoiceChannel';
 import FriendCall from './friend/FriendCall';
-import CallNotificationModal from './CallNotificationModal';
+import CallNotificationModal from './friend/CallNotificationModal';
 import Notification from './Notification';
 import { useAuth } from './provider/AuthProvider';
 
@@ -23,7 +23,7 @@ const Dashboard: React.FC = () => {
   const [selectedServer, setSelectedServer] = useState<{ id: string; name: string; isOwner: boolean } | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<{ id: string; name: string; type: 'text' | 'voice' } | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<{ userId: string; displayName: string } | null>(null);
-  const [dmSelected, setDmSelected] = useState<boolean>(false);
+  const [dmSelected, setDmSelected] = useState<boolean>(true); // Set DM as default selected
   const [selectedTab, setSelectedTab] = useState<'friends' | 'online' | 'all' | 'pending' | 'blocked' | 'addFriend'>('friends');
   const [categorySelected, setCategorySelected] = useState<'friends' | 'notifications' | null>(null);
   const [callData, setCallData] = useState<{ callType: 'voice' | 'video'; friendId: string; dmDocId: string } | null>(null);
@@ -124,8 +124,10 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const isElectron = window.electron?.isElectron;
+
   return (
-    <div className="font-sans antialiased h-screen flex w-full">
+    <div className={isElectron ? "font-sans antialiased h-screen flex mt-16" : "font-sans antialiased h-screen flex w-full"}>
       {incomingCall && (
         <CallNotificationModal
           callerName={incomingCall.displayName}

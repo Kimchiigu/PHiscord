@@ -3,6 +3,7 @@ import { db, storage } from '../FirebaseConfig';
 import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter, where, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from './provider/AuthProvider';
+import { useToast } from './provider/ToastProvider'; // Import useToast
 import Message from './Message';
 import MentionsList from './MentionsList';
 import Filter from 'bad-words';
@@ -25,6 +26,7 @@ interface Member {
 
 const Chat: React.FC<{ serverID: string; channelID: string; channelName: string }> = ({ serverID, channelID, channelName }) => {
   const { currentUser } = useAuth();
+  const { showToast } = useToast(); // Use showToast from ToastProvider
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -141,6 +143,32 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
     fetchCurrentUserNickname();
   }, [currentUser, serverID]);
 
+  useEffect(() => {
+    if (!serverID || !channelID) return;
+
+    const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
+    const messagesQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(1));
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      if (!snapshot.empty) {
+        const messageData = snapshot.docs[0].data() as MessageData;
+        if (messageData.user !== currentUser?.displayName) {
+          // Send notification to Electron
+          if (typeof window !== 'undefined' && window.electron) {
+            window.electron.ipcRenderer.send('show-notification', {
+              title: `New message in ${channelName}`,
+              body: `${messageData.user} : ${messageData.message}`,
+            });
+          }
+
+          showToast(`New message in #${channelName}`, 'info');
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [serverID, channelID, showToast, currentUser?.displayName, channelName]);
+
   const fetchOlderMessages = async () => {
     if (!lastVisible) return;
 
@@ -238,14 +266,6 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
           channelName,
           timestamp,
         });
-
-        // Send notification to Electron
-        if (typeof window !== 'undefined' && window.electron) {
-          window.electron.ipcRenderer.send('show-notification', {
-            title: `New message in ${channelName}`,
-            body: newMessage,
-          });
-        }
       }
     });
     await batch.commit();

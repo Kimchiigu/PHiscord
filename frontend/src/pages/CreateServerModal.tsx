@@ -120,7 +120,7 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
               <input
                 type="text"
                 id="serverName"
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-[--secondary-bg-color] text-[--primary-text-color]"
                 value={serverName}
                 onChange={(e) => setServerName(e.target.value)}
               />
@@ -130,7 +130,7 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
               <input
                 type="file"
                 id="serverImage"
-                className="mt-1 block w-full text-sm text-[--primary-text-color] bg-gray-50 rounded-lg border border-gray-300 cursor-pointer dark:text-gray-400 dark:bg-gray-700 dark:border-gray-600"
+                className="mt-1 block w-full text-sm text-[--primary-text-color] bg-[--secondary-bg-color] rounded-lg border border-gray-300 cursor-pointe] dark:bg-gray-700 dark:border-gray-600"
                 onChange={(e) => setServerImage(e.target.files?.[0] || null)}
               />
             </div>
@@ -151,7 +151,7 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
               <input
                 type="text"
                 id="inviteLink"
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-[--secondary-bg-color] text-[--primary-text-color]"
                 value={inviteLink}
                 onChange={(e) => setInviteLink(e.target.value)}
               />
@@ -170,20 +170,20 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
 
   const renderChooseStep = () => (
     <div className="p-4 md:p-5">
-      <p className="text-gray-500 dark:text-gray-400 mb-4 text-center">Your server is where you and your friends hang out. Make yours and start talking</p>
+      <p className="text-[--secondary-text-color] mb-4 text-center">Your server is where you and your friends hang out. Make yours and start talking</p>
       <ul className="space-y-4 mb-4">
         <li>
           <input type="radio" id="create-server" name="server-option" value="create" className="hidden peer" required onChange={() => handleOptionChange('create')} />
           <label
             htmlFor="create-server"
-            className="inline-flex items-center justify-between w-full p-5 text-[--primary-text-color] bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-500 dark:peer-checked:text-blue-500 peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-[--primary-text-color] hover:bg-gray-100 dark:text-white dark:bg-gray-600 dark:hover:bg-gray-500"
+            className="inline-flex items-center justify-between w-full p-5 text-[--primary-text-color] bg-[--primary-bg-color] border border-gray-200 rounded-lg cursor-pointer  peer-checked:border-blue-400 peer-checked:text-blue-400 hover:text-[--primary-text-color] hover:bg-[--secondary-bg-color] "
           >
             <div className="block">
               <div className="w-full text-lg font-semibold">Create my Own Server</div>
-              <div className="w-full text-gray-500 dark:text-gray-400">Create, Design, and Own it!</div>
+              <div className="w-full text-[--secondary-text-color]">Create, Design, and Own it!</div>
             </div>
             <svg
-              className="w-4 h-4 ms-3 rtl:rotate-180 text-gray-500 dark:text-gray-400"
+              className="w-4 h-4 ms-3 rtl:rotate-180 text-[--secondary-text-color]"
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -197,14 +197,14 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
           <input type="radio" id="join-server" name="server-option" value="join" className="hidden peer" onChange={() => handleOptionChange('join')} />
           <label
             htmlFor="join-server"
-            className="inline-flex items-center justify-between w-full p-5 text-[--primary-text-color] bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-500  peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-[--primary-text-color] hover:bg-gray-100 "
+            className="inline-flex items-center justify-between w-full p-5 text-[--primary-text-color] bg-[--primary-bg-color] border border-gray-200 rounded-lg cursor-pointer  peer-checked:border-blue-400 peer-checked:text-blue-400 hover:text-[--primary-text-color] hover:bg-[--secondary-bg-color] "
           >
             <div className="block">
               <div className="w-full text-lg font-semibold">Join a Server</div>
-              <div className="w-full text-gray-500 ">Get invited to a server!</div>
+              <div className="w-full text-[--secondary-text-color] ">Get invited to a server!</div>
             </div>
             <svg
-              className="w-4 h-4 ms-3 rtl:rotate-180 text-gray-500 "
+              className="w-4 h-4 ms-3 rtl:rotate-180 text-[--secondary-text-color] "
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -228,17 +228,17 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
     <div className="fixed z-10 inset-0 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 text-center sm:block sm:p-0">
         <div className="fixed inset-0 transition-opacity">
-          <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
+          <div className="absolute inset-0 bg-[--overlay-color] opacity-75"></div>
         </div>
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-        <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full ">
+        <div className="relative inline-block align-bottom bg-[--primary-bg-color] rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full ">
           <div className="relative p-4 w-full max-h-full">
-            <div className="relative bg-white rounded-lg shadow ">
+            <div className="relative bg-[--primary-bg-color] rounded-lg shadow ">
               <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t ">
                 <h3 className="text-4xl font-bold text-[--primary-text-color] ">Create a Server</h3>
                 <button
                   type="button"
-                  className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-[--primary-text-color] rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center "
+                  className="text-gray-400 bg-transparent hover:bg-red-500 hover:text-[--primary-text-color] rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center "
                   onClick={handleClose}
                 >
                   <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">

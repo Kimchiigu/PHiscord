@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../../FirebaseConfig';
-import { collection, getDocs, doc, getDoc, CollectionReference } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where, CollectionReference } from 'firebase/firestore';
 import { useAuth } from '../provider/AuthProvider';
 import ProfileBar from '../ProfileBar';
 
@@ -23,6 +23,9 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
   const [privacySettings, setPrivacySettings] = useState<any>({});
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [guestToOpen, setGuestToOpen] = useState<Friend | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filteredFriends, setFilteredFriends] = useState<Friend[]>([]);
+  const [filteredGuests, setFilteredGuests] = useState<Friend[]>([]);
 
   const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
 
@@ -86,12 +89,52 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
 
       setFriends(friendsList);
       setGuests(guestsList);
+      setFilteredFriends(friendsList);
+      setFilteredGuests(guestsList);
       setLoading(false);
     };
 
     fetchPrivacySettings();
     fetchFriendsAndGuests();
   }, [currentUser]);
+
+  useEffect(() => {
+    const searchMessages = async (searchTerm: string) => {
+      const filteredFriendsList: Friend[] = [];
+      const filteredGuestsList: Friend[] = [];
+
+      const searchFriendMessages = async (friend: Friend) => {
+        const messagesRef = collection(db, 'Users', currentUser!.uid, 'Friends', friend.userId, 'Messages');
+        const messagesQuery = query(messagesRef, where('text', '>=', searchTerm), where('text', '<=', searchTerm + '\uf8ff'));
+        const messageSnapshot = await getDocs(messagesQuery);
+        if (!messageSnapshot.empty) {
+          filteredFriendsList.push(friend);
+        }
+      };
+
+      const searchGuestMessages = async (guest: Friend) => {
+        const messagesRef = collection(db, 'Users', currentUser!.uid, 'Guests', guest.userId, 'Messages');
+        const messagesQuery = query(messagesRef, where('text', '>=', searchTerm), where('text', '<=', searchTerm + '\uf8ff'));
+        const messageSnapshot = await getDocs(messagesQuery);
+        if (!messageSnapshot.empty) {
+          filteredGuestsList.push(guest);
+        }
+      };
+
+      await Promise.all(friends.map(friend => searchFriendMessages(friend)));
+      await Promise.all(guests.map(guest => searchGuestMessages(guest)));
+
+      setFilteredFriends(filteredFriendsList);
+      setFilteredGuests(filteredGuestsList);
+    };
+
+    if (searchTerm) {
+      searchMessages(searchTerm);
+    } else {
+      setFilteredFriends(friends);
+      setFilteredGuests(guests);
+    }
+  }, [searchTerm, friends, guests, currentUser]);
 
   const handleGuestClick = (guest: Friend) => {
     if (privacySettings.guestMessages === 'hide') {
@@ -118,6 +161,13 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
         </div>
       </div>
       <div className="mb-4 px-4 text-left">
+        <input
+          type="text"
+          placeholder="Search messages"
+          className="w-full px-3 py-2 mb-4 rounded-lg bg-[--primary-bg-color] text-[--primary-text-color] placeholder-gray-500"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <button
           className='bg-violet-600 flex justify-center items-center py-3 rounded-lg mt-5 mb-2 w-full'
           onClick={() => onCategorySelect('notifications')}
@@ -134,10 +184,10 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
           <p className="text-[--secondary-text-color] text-center">Loading friends list...</p>
         ) : (
           <>
-            {friends.length > 0 && (
+            {filteredFriends.length > 0 && (
               <>
                 <h1 className="text-[--secondary-text-color] font-semibold text-left mb-2 text-sm">DIRECT MESSAGES</h1>
-                {friends.map((friend) => (
+                {filteredFriends.map((friend) => (
                   <div key={friend.userId} className="flex items-center mb-2 cursor-pointer" onClick={() => onFriendSelect(friend)}>
                     <img src={friend.profilePicture} alt="Friend" className="w-10 h-10 rounded-full mr-3" />
                     <div className="flex flex-col">
@@ -147,10 +197,10 @@ const FriendList: React.FC<FriendListProps> = ({ onFriendSelect, onCategorySelec
                 ))}
               </>
             )}
-            {privacySettings.guestMessages !== 'block' && guests.length > 0 && (
+            {privacySettings.guestMessages !== 'block' && filteredGuests.length > 0 && (
               <>
                 <h1 className="text-[--secondary-text-color] font-semibold text-left mb-2 text-sm">STRANGERS</h1>
-                {guests.map((guest) => (
+                {filteredGuests.map((guest) => (
                   <div key={guest.userId} className="flex items-center mb-2 cursor-pointer" onClick={() => handleGuestClick(guest)}>
                     <img src={guest.profilePicture} alt="Guest" className="w-10 h-10 rounded-full mr-3" />
                     <div className="flex flex-col">

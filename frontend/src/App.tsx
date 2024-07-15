@@ -18,11 +18,11 @@ function App() {
 
   return (
     <div className="flex-flex-col w-full">
-      <AuthProvider>
-        <ToastProvider>
+      <ToastProvider>
+        <AuthProvider>
           <ThemeProvider>
-            {isElectron && <TitleBar />}
             <BrowserRouter>
+              {isElectron && <TitleBar />}
               <Routes>
                 <Route path="/" element={<Login />} />
                 <Route path="/login" element={<Login />} />
@@ -38,8 +38,8 @@ function App() {
               </Routes>
             </BrowserRouter>
           </ThemeProvider>
-        </ToastProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </ToastProvider>
     </div>
   );
 }

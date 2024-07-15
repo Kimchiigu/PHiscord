@@ -3,7 +3,7 @@ import { db } from '../FirebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from './provider/AuthProvider';
 import ServerIcon from './ServerIcon';
-import Modal from './Modal';
+import Modal from './CreateServerModal';
 
 interface Server {
   serverID: string;

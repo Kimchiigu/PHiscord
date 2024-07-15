@@ -87,9 +87,6 @@ const Login: React.FC = () => {
             <label htmlFor="password" className="text-sm text-gray-400 dark:text-gray-200 flex items-center">
               Password <span className='text-red-500 ml-1'>*</span>
             </label>
-            <Link to="/register">
-              <p className="text-xs text-blue-500 dark:text-gray-400 hover:underline">Forget Password?</p>
-            </Link>
           </div>
 
           <input 
