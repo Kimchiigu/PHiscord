@@ -1,12 +1,27 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { db, storage } from '../FirebaseConfig';
-import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter, where, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { useAuth } from './provider/AuthProvider';
-import { useToast } from './provider/ToastProvider'; // Import useToast
-import Message from './Message';
-import MentionsList from './MentionsList';
-import Filter from 'bad-words';
+import React, { useEffect, useState, useRef } from "react";
+import { db, storage } from "../FirebaseConfig";
+import {
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  updateDoc,
+  doc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  limit,
+  startAfter,
+  where,
+  writeBatch,
+} from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useAuth } from "./provider/AuthProvider";
+import { useToast } from "./provider/ToastProvider"; // Import useToast
+import Message from "./Message";
+import MentionsList from "./MentionsList";
+import Filter from "bad-words";
 
 interface MessageData {
   id: string;
@@ -24,47 +39,70 @@ interface Member {
   serverNickname?: string;
 }
 
-const Chat: React.FC<{ serverID: string; channelID: string; channelName: string }> = ({ serverID, channelID, channelName }) => {
+const Chat: React.FC<{
+  serverID: string;
+  channelID: string;
+  channelName: string;
+}> = ({ serverID, channelID, channelName }) => {
   const { currentUser } = useAuth();
   const { showToast } = useToast(); // Use showToast from ToastProvider
   const [messages, setMessages] = useState<MessageData[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [emojiTrayVisible, setEmojiTrayVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState<{ id: string; visible: boolean }>({ id: '', visible: false });
+  const [showDeleteModal, setShowDeleteModal] = useState<{
+    id: string;
+    visible: boolean;
+  }>({ id: "", visible: false });
   const [mentionList, setMentionList] = useState<Member[]>([]);
   const [mentionVisible, setMentionVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MessageData[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
-  const [currentUserNickname, setCurrentUserNickname] = useState<string | null>(null);
+  const [currentUserNickname, setCurrentUserNickname] = useState<string | null>(
+    null
+  );
   const [nsfw, setNsfw] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
-  const emojis = ['😀', '😂', '😍', '😎', '😭', '😡', '👍', '👎', '🙏', '💪'];
+  const defaultProfilePicture =
+    "https://cdn.discordapp.com/embed/avatars/0.png";
+  const emojis = ["😀", "😂", "😍", "😎", "😭", "😡", "👍", "👎", "🙏", "💪"];
 
   const isImage = (url: string) => /(\.jpeg|\.jpg|\.gif|\.png)$/.test(url);
   const isVideo = (url: string) => /(\.mp4|\.webm|\.ogg)$/.test(url);
 
   useEffect(() => {
     if (!serverID || !channelID) {
-      console.error('Server ID or Channel ID is not defined');
+      console.error("Server ID or Channel ID is not defined");
       return;
     }
 
     const fetchMessages = async () => {
       setLoading(true);
       try {
-        const channelDoc = await getDoc(doc(db, 'Servers', serverID, 'Channels', channelID));
+        const channelDoc = await getDoc(
+          doc(db, "Servers", serverID, "Channels", channelID)
+        );
         if (channelDoc.exists()) {
           setNsfw(channelDoc.data().nsfw);
         }
 
-        const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
-        const messagesQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(20));
+        const messagesCollection = collection(
+          db,
+          "Servers",
+          serverID,
+          "Channels",
+          channelID,
+          "Messages"
+        );
+        const messagesQuery = query(
+          messagesCollection,
+          orderBy("timestamp", "desc"),
+          limit(20)
+        );
 
         onSnapshot(messagesQuery, (snapshot) => {
           const filter = new Filter();
@@ -75,7 +113,9 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
               ...data,
               message: nsfw ? data.message : filter.clean(data.message),
               timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
-              editedTimestamp: data.editedTimestamp ? data.editedTimestamp.toDate() : undefined,
+              editedTimestamp: data.editedTimestamp
+                ? data.editedTimestamp.toDate()
+                : undefined,
             };
           }) as MessageData[];
 
@@ -85,7 +125,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
           scrollToBottom();
         });
       } catch (error) {
-        console.error('Error fetching messages:', error);
+        console.error("Error fetching messages:", error);
         setLoading(false);
       }
     };
@@ -96,17 +136,20 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   useEffect(() => {
     const fetchMentions = async () => {
       setLoading(true);
-      const membersCollection = collection(db, 'Servers', serverID, 'Members');
+      const membersCollection = collection(db, "Servers", serverID, "Members");
       const memberSnapshot = await getDocs(membersCollection);
       const membersList: Member[] = [];
 
       for (const memberDoc of memberSnapshot.docs) {
         const memberData = memberDoc.data() as { userId: string; role: string };
-        const userDoc = await getDoc(doc(db, 'Users', memberData.userId));
+        const userDoc = await getDoc(doc(db, "Users", memberData.userId));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           const nicknameDoc = await getDocs(
-            query(collection(db, 'Users', memberData.userId, 'Nicknames'), where('serverId', '==', serverID))
+            query(
+              collection(db, "Users", memberData.userId, "Nicknames"),
+              where("serverId", "==", serverID)
+            )
           );
           const nicknameData = nicknameDoc.docs[0]?.data();
           const member = {
@@ -129,8 +172,8 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
     const fetchCurrentUserNickname = async () => {
       if (currentUser) {
         const nicknameQuery = query(
-          collection(db, 'Users', currentUser.uid, 'Nicknames'),
-          where('serverId', '==', serverID)
+          collection(db, "Users", currentUser.uid, "Nicknames"),
+          where("serverId", "==", serverID)
         );
         const nicknameSnapshot = await getDocs(nicknameQuery);
         if (!nicknameSnapshot.empty) {
@@ -146,22 +189,33 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
   useEffect(() => {
     if (!serverID || !channelID) return;
 
-    const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
-    const messagesQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(1));
+    const messagesCollection = collection(
+      db,
+      "Servers",
+      serverID,
+      "Channels",
+      channelID,
+      "Messages"
+    );
+    const messagesQuery = query(
+      messagesCollection,
+      orderBy("timestamp", "desc"),
+      limit(1)
+    );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
       if (!snapshot.empty) {
         const messageData = snapshot.docs[0].data() as MessageData;
         if (messageData.user !== currentUser?.displayName) {
           // Send notification to Electron
-          if (typeof window !== 'undefined' && window.electron) {
-            window.electron.ipcRenderer.send('show-notification', {
+          if (typeof window !== "undefined" && window.electron) {
+            window.electron.ipcRenderer.send("show-notification", {
               title: `New message in ${channelName}`,
               body: `${messageData.user} : ${messageData.message}`,
             });
           }
 
-          showToast(`New message in #${channelName}`, 'info');
+          showToast(`New message in #${channelName}`, "info");
         }
       }
     });
@@ -174,10 +228,17 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
     setLoading(true);
     try {
-      const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
+      const messagesCollection = collection(
+        db,
+        "Servers",
+        serverID,
+        "Channels",
+        channelID,
+        "Messages"
+      );
       const messagesQuery = query(
         messagesCollection,
-        orderBy('timestamp', 'desc'),
+        orderBy("timestamp", "desc"),
         startAfter(lastVisible),
         limit(20)
       );
@@ -191,15 +252,20 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
           ...data,
           message: nsfw ? data.message : filter.clean(data.message),
           timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
-          editedTimestamp: data.editedTimestamp ? data.editedTimestamp.toDate() : undefined,
+          editedTimestamp: data.editedTimestamp
+            ? data.editedTimestamp.toDate()
+            : undefined,
         };
       }) as MessageData[];
 
-      setMessages((prevMessages) => [...olderMessages.reverse(), ...prevMessages]);
+      setMessages((prevMessages) => [
+        ...olderMessages.reverse(),
+        ...prevMessages,
+      ]);
       setLastVisible(messageSnapshot.docs[messageSnapshot.docs.length - 1]);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching older messages:', error);
+      console.error("Error fetching older messages:", error);
       setLoading(false);
     }
   };
@@ -212,27 +278,37 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
   const handleSendMessage = async () => {
     if (!serverID || !channelID) {
-      console.error('Server ID or Channel ID is not defined');
+      console.error("Server ID or Channel ID is not defined");
       return;
     }
 
-    if (newMessage.trim() === '' && !selectedFile) return;
-    const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
+    if (newMessage.trim() === "" && !selectedFile) return;
+    const messagesCollection = collection(
+      db,
+      "Servers",
+      serverID,
+      "Channels",
+      channelID,
+      "Messages"
+    );
     const timestamp = new Date();
-    let fileUrl = '';
+    let fileUrl = "";
 
     if (selectedFile) {
-      const fileRef = ref(storage, `files/${serverID}/${channelID}/${selectedFile.name}`);
+      const fileRef = ref(
+        storage,
+        `files/${serverID}/${channelID}/${selectedFile.name}`
+      );
       await uploadBytes(fileRef, selectedFile);
       fileUrl = await getDownloadURL(fileRef);
     }
 
     // Fetch server nickname
-    let serverNickname = currentUser?.displayName || 'Anonymous';
+    let serverNickname = currentUser?.displayName || "Anonymous";
     if (currentUser) {
       const nicknameQuery = query(
-        collection(db, 'Users', currentUser.uid, 'Nicknames'),
-        where('serverId', '==', serverID)
+        collection(db, "Users", currentUser.uid, "Nicknames"),
+        where("serverId", "==", serverID)
       );
       const nicknameSnapshot = await getDocs(nicknameQuery);
       if (!nicknameSnapshot.empty) {
@@ -251,16 +327,18 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
     const messageDoc = await addDoc(messagesCollection, messageData);
 
     // Create notifications for other users
-    const membersSnapshot = await getDocs(collection(db, 'Servers', serverID, 'Members'));
+    const membersSnapshot = await getDocs(
+      collection(db, "Servers", serverID, "Members")
+    );
     const batch = writeBatch(db);
     membersSnapshot.forEach((memberDoc) => {
       const memberData = memberDoc.data();
       if (memberData.userId !== currentUser?.uid) {
-        const notificationRef = doc(collection(db, 'Notifications'));
+        const notificationRef = doc(collection(db, "Notifications"));
         batch.set(notificationRef, {
           userId: memberData.userId,
-          type: 'Channel',
-          sender: currentUser?.displayName || 'Anonymous',
+          type: "Channel",
+          sender: currentUser?.displayName || "Anonymous",
           content: newMessage,
           docId: messageDoc.id,
           channelName,
@@ -270,7 +348,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
     });
     await batch.commit();
 
-    setNewMessage('');
+    setNewMessage("");
     setSelectedFile(null);
     setFilePreview(null);
     scrollToBottom();
@@ -300,11 +378,19 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
   const handleEditMessage = async (id: string, newMessage: string) => {
     if (!serverID || !channelID) {
-      console.error('Server ID or Channel ID is not defined');
+      console.error("Server ID or Channel ID is not defined");
       return;
     }
 
-    const messageDoc = doc(db, 'Servers', serverID, 'Channels', channelID, 'Messages', id);
+    const messageDoc = doc(
+      db,
+      "Servers",
+      serverID,
+      "Channels",
+      channelID,
+      "Messages",
+      id
+    );
     await updateDoc(messageDoc, {
       message: newMessage,
       editedTimestamp: new Date(),
@@ -313,13 +399,21 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
   const handleDeleteMessage = async (id: string) => {
     if (!serverID || !channelID) {
-      console.error('Server ID or Channel ID is not defined');
+      console.error("Server ID or Channel ID is not defined");
       return;
     }
 
-    const messageDoc = doc(db, 'Servers', serverID, 'Channels', channelID, 'Messages', id);
+    const messageDoc = doc(
+      db,
+      "Servers",
+      serverID,
+      "Channels",
+      channelID,
+      "Messages",
+      id
+    );
     await deleteDoc(messageDoc);
-    setShowDeleteModal({ id: '', visible: false });
+    setShowDeleteModal({ id: "", visible: false });
   };
 
   const handleMentionSelect = (displayName: string) => {
@@ -335,7 +429,14 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
 
     setLoading(true);
     try {
-      const messagesCollection = collection(db, 'Servers', serverID, 'Channels', channelID, 'Messages');
+      const messagesCollection = collection(
+        db,
+        "Servers",
+        serverID,
+        "Channels",
+        channelID,
+        "Messages"
+      );
       const messageSnapshot = await getDocs(messagesCollection);
 
       const results: MessageData[] = [];
@@ -343,10 +444,12 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
         const messageData = doc.data() as MessageData;
         if (messageData.message.includes(searchQuery)) {
           results.push({
-            id: doc.id,
+            // id: doc.id,
             ...messageData,
             timestamp: messageData.timestamp.toDate(),
-            editedTimestamp: messageData.editedTimestamp ? messageData.editedTimestamp.toDate() : undefined,
+            editedTimestamp: messageData.editedTimestamp
+              ? messageData.editedTimestamp.toDate()
+              : undefined,
           });
         }
       });
@@ -354,7 +457,7 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       setSearchResults(results);
       setLoading(false);
     } catch (error) {
-      console.error('Error searching messages:', error);
+      console.error("Error searching messages:", error);
       setLoading(false);
     }
   };
@@ -365,20 +468,21 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       const elementOffset = messageElement.offsetTop;
       chatContainerRef.current.scrollTo({
         top: elementOffset - 100,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
-      messageElement.classList.add('highlight');
+      messageElement.classList.add("highlight");
       setTimeout(() => {
-        messageElement.classList.remove('highlight');
+        messageElement.classList.remove("highlight");
       }, 1000);
-      setSearchQuery('');
+      setSearchQuery("");
       setSearchResults([]);
     }
   };
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   };
 
@@ -387,7 +491,8 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       <div className="border-b border-gray-600 flex px-6 py-2 items-center flex-none shadow-xl">
         <div className="flex flex-col">
           <h3 className="mb-1 font-bold text-xl text-[--primary-text-color]">
-            <span className="text-[--secondary-text-color]">#</span> {channelName}
+            <span className="text-[--secondary-text-color]">#</span>{" "}
+            {channelName}
           </h3>
         </div>
         <div className="ml-auto flex items-center">
@@ -397,11 +502,11 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
             placeholder="Search messages"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => setSearchQuery("")}
               className="ml-2 text-[--secondary-text-color] hover:text-gray-200"
             >
               Cancel
@@ -411,26 +516,38 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       </div>
       {searchResults.length > 0 && (
         <div className="absolute top-16 left-0 right-0 bg-[--secondary-bg-color] p-4 max-h-64 overflow-y-auto z-10 overflow-x-hidden mx-2 rounded-md">
-          {searchResults.map(result => (
+          {searchResults.map((result) => (
             <div
               key={result.id}
               className="text-[--primary-text-color] rounded-md cursor-pointer p-2 hover:bg-[--tersier-bg-color]"
               onClick={() => handleSelectSearchResult(result.id)}
             >
-              <p><strong>{result.user}:</strong> {result.message}</p>
-              <span className="text-[--secondary-text-color] text-xs">{new Date(result.timestamp).toLocaleString()}</span>
+              <p>
+                <strong>{result.user}:</strong> {result.message}
+              </p>
+              <span className="text-[--secondary-text-color] text-xs">
+                {new Date(result.timestamp).toLocaleString()}
+              </span>
             </div>
           ))}
         </div>
       )}
       {searchResults.length === 0 && searchQuery && (
         <div className="absolute top-16 left-0 right-0 bg-[--secondary-bg-color] p-4 z-10 mx-3 rounded-md">
-          <p className="text-[--primary-text-color] text-center">No Result Found!</p>
+          <p className="text-[--primary-text-color] text-center">
+            No Result Found!
+          </p>
         </div>
       )}
-      <div className="px-6 py-4 flex-1 overflow-y-scroll" onScroll={handleScroll} ref={chatContainerRef}>
+      <div
+        className="px-6 py-4 flex-1 overflow-y-scroll"
+        onScroll={handleScroll}
+        ref={chatContainerRef}
+      >
         {loading ? (
-          <p className="text-[--secondary-text-color] text-center">Loading messages...</p>
+          <p className="text-[--secondary-text-color] text-center">
+            Loading messages...
+          </p>
         ) : (
           messages.map((msg) => (
             <Message
@@ -440,12 +557,18 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
               user={msg.user}
               message={msg.message}
               time={new Date(msg.timestamp).toLocaleTimeString()}
-              editedTime={msg.editedTimestamp ? new Date(msg.editedTimestamp).toLocaleTimeString() : undefined}
+              editedTime={
+                msg.editedTimestamp
+                  ? new Date(msg.editedTimestamp).toLocaleTimeString()
+                  : undefined
+              }
               onDelete={() => setShowDeleteModal({ id: msg.id, visible: true })}
               onEdit={(newMessage) => handleEditMessage(msg.id, newMessage)}
               isMentioned={
-                (currentUserNickname && msg.message.includes(`@${currentUserNickname}`)) ||
-                (currentUser?.displayName && msg.message.includes(`@${currentUser.displayName}`)) ||
+                (currentUserNickname &&
+                  msg.message.includes(`@${currentUserNickname}`)) ||
+                (currentUser?.displayName &&
+                  msg.message.includes(`@${currentUser.displayName}`)) ||
                 msg.message.includes(`@everyone`)
               }
             />
@@ -455,10 +578,12 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
       {showDeleteModal.visible && (
         <div className="fixed inset-0 bg-black z-50 bg-opacity-50 flex items-center justify-center">
           <div className="bg-[--primary-bg-color] p-4 rounded-lg">
-            <h2 className="text-[--primary-text-color] mb-4">Are you sure you want to delete this message?</h2>
+            <h2 className="text-[--primary-text-color] mb-4">
+              Are you sure you want to delete this message?
+            </h2>
             <div className="flex justify-end">
               <button
-                onClick={() => setShowDeleteModal({ id: '', visible: false })}
+                onClick={() => setShowDeleteModal({ id: "", visible: false })}
                 className="text-[--secondary-text-color] hover:text-gray-200 mr-4"
               >
                 Cancel
@@ -483,7 +608,11 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
               ✖
             </button>
             {isImage(filePreview) ? (
-              <img src={filePreview} alt="Preview" className="max-w-full h-auto rounded" />
+              <img
+                src={filePreview}
+                alt="Preview"
+                className="max-w-full h-auto rounded"
+              />
             ) : isVideo(filePreview) ? (
               <video controls className="max-w-full h-auto rounded">
                 <source src={filePreview} type="video/mp4" />
@@ -515,13 +644,22 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
           </div>
         )}
         <div className="flex rounded-lg overflow-hidden mt-2">
-          <span className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer" onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}>
+          <span
+            className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer"
+            onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}
+          >
             😊
           </span>
           {emojiTrayVisible && (
             <div className="absolute bottom-16 bg-[--secondary-bg-color] p-2 rounded shadow-lg grid grid-cols-5 gap-2">
-              {emojis.map(emoji => (
-                <span key={emoji} className="text-2xl cursor-pointer" onClick={() => handleSelectEmoji(emoji)}>{emoji}</span>
+              {emojis.map((emoji) => (
+                <span
+                  key={emoji}
+                  className="text-2xl cursor-pointer"
+                  onClick={() => handleSelectEmoji(emoji)}
+                >
+                  {emoji}
+                </span>
               ))}
             </div>
           )}
@@ -532,9 +670,9 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
             value={newMessage}
             onChange={(e) => {
               setNewMessage(e.target.value);
-              setMentionVisible(e.target.value.includes('@'));
+              setMentionVisible(e.target.value.includes("@"));
             }}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
           />
           <input
             type="file"
@@ -542,14 +680,22 @@ const Chat: React.FC<{ serverID: string; channelID: string; channelName: string 
             id="fileInput"
             onChange={handleFileChange}
           />
-          <label htmlFor="fileInput" className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer">
+          <label
+            htmlFor="fileInput"
+            className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer"
+          >
             📎
           </label>
-          <span className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer" onClick={handleSendMessage}>
+          <span
+            className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer"
+            onClick={handleSendMessage}
+          >
             📤
           </span>
         </div>
-        {mentionVisible && <MentionsList members={mentionList} onSelect={handleMentionSelect} />}
+        {mentionVisible && (
+          <MentionsList members={mentionList} onSelect={handleMentionSelect} />
+        )}
       </div>
     </div>
   );

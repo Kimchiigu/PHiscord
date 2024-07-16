@@ -1,64 +1,99 @@
-import React, { useEffect, useState } from 'react';
-import { db, storage } from '../../FirebaseConfig';
-import { collection, getDocs, addDoc, getDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { getDownloadURL, ref } from 'firebase/storage';
+import React, { useEffect, useState } from "react";
+import { db, storage } from "../../FirebaseConfig";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  getDoc,
+  doc,
+  deleteDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getDownloadURL, ref } from "firebase/storage";
+
+type Tab = "friends" | "online" | "all" | "pending" | "blocked" | "addFriend";
 
 interface FriendCategoryProps {
-  selectedTab: string;
-  setSelectedTab: (tab: string) => void;
+  selectedTab: Tab;
+  setSelectedTab: (tab: Tab) => void;
 }
 
-const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelectedTab }) => {
+const FriendCategory: React.FC<FriendCategoryProps> = ({
+  selectedTab,
+  setSelectedTab,
+}) => {
   const { currentUser } = getAuth();
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [newFriendId, setNewFriendId] = useState<string>('');
+  const [newFriendId, setNewFriendId] = useState<string>("");
 
   const currentUserId = currentUser?.uid;
-  const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
+  const defaultProfilePicture =
+    "https://cdn.discordapp.com/embed/avatars/0.png";
 
-  const fetchFriends = async (tab: string) => {
+  const fetchFriends = async (tab: Tab) => {
     if (!currentUserId) return;
 
     setLoading(true);
     try {
       let friendsQuery;
 
-      if (tab === 'online') {
+      if (tab === "online") {
         const onlineFriends: any[] = [];
-        const friendsSnapshot = await getDocs(collection(db, 'Users', currentUserId, 'Friends'));
+        const friendsSnapshot = await getDocs(
+          collection(db, "Users", currentUserId, "Friends")
+        );
         for (const friendDoc of friendsSnapshot.docs) {
           const friendData = friendDoc.data();
-          const userDoc = await getDoc(doc(db, 'Users', friendData.userId));
+          const userDoc = await getDoc(doc(db, "Users", friendData.userId));
           if (userDoc.exists() && userDoc.data().isOnline) {
             const userData = userDoc.data();
             let profilePictureUrl = defaultProfilePicture;
             if (userData.profilePicture != null) {
-              profilePictureUrl = await getDownloadURL(ref(storage, `${userData.profilePicture}`));
+              profilePictureUrl = await getDownloadURL(
+                ref(storage, `${userData.profilePicture}`)
+              );
             }
-            onlineFriends.push({ id: friendDoc.id, ...friendData, ...userData, profilePictureUrl });
+            onlineFriends.push({
+              id: friendDoc.id,
+              ...friendData,
+              ...userData,
+              profilePictureUrl,
+            });
           }
         }
         setFriends(onlineFriends);
-      } else if (tab === 'all') {
-        friendsQuery = collection(db, 'Users', currentUserId, 'Friends');
-      } else if (tab === 'blocked') {
-        friendsQuery = collection(db, 'Users', currentUserId, 'Blocked');
-      } else if (tab === 'pending') {
+      } else if (tab === "all") {
+        friendsQuery = collection(db, "Users", currentUserId, "Friends");
+      } else if (tab === "blocked") {
+        friendsQuery = collection(db, "Users", currentUserId, "Blocked");
+      } else if (tab === "pending") {
         const pendingFriends: any[] = [];
-        const pendingSnapshot = await getDocs(collection(db, 'FriendRequests'));
+        const pendingSnapshot = await getDocs(collection(db, "FriendRequests"));
         for (const requestDoc of pendingSnapshot.docs) {
           const requestData = requestDoc.data();
-          if (requestData.receiverId === currentUserId && requestData.status === 'waiting') {
-            const userDoc = await getDoc(doc(db, 'Users', requestData.senderId));
+          if (
+            requestData.receiverId === currentUserId &&
+            requestData.status === "waiting"
+          ) {
+            const userDoc = await getDoc(
+              doc(db, "Users", requestData.senderId)
+            );
             if (userDoc.exists()) {
               const userData = userDoc.data();
               let profilePictureUrl = defaultProfilePicture;
               if (userData.profilePicture != null) {
-                profilePictureUrl = await getDownloadURL(ref(storage, `${userData.profilePicture}`));
+                profilePictureUrl = await getDownloadURL(
+                  ref(storage, `${userData.profilePicture}`)
+                );
               }
-              pendingFriends.push({ id: requestDoc.id, ...requestData, ...userData, profilePictureUrl });
+              pendingFriends.push({
+                id: requestDoc.id,
+                ...requestData,
+                ...userData,
+                profilePictureUrl,
+              });
             }
           }
         }
@@ -70,14 +105,21 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
         const friendsList = [];
         for (const friendDoc of friendsSnapshot.docs) {
           const friendData = friendDoc.data();
-          const userDoc = await getDoc(doc(db, 'Users', friendData.userId));
+          const userDoc = await getDoc(doc(db, "Users", friendData.userId));
           if (userDoc.exists()) {
             const userData = userDoc.data();
             let profilePictureUrl = defaultProfilePicture;
             if (userData.profilePicture) {
-              profilePictureUrl = await getDownloadURL(ref(storage, `${userData.profilePicture}`));;
+              profilePictureUrl = await getDownloadURL(
+                ref(storage, `${userData.profilePicture}`)
+              );
             }
-            friendsList.push({ id: friendDoc.id, ...friendData, ...userData, profilePictureUrl });
+            friendsList.push({
+              id: friendDoc.id,
+              ...friendData,
+              ...userData,
+              profilePictureUrl,
+            });
           }
         }
         setFriends(friendsList);
@@ -89,7 +131,12 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
   };
 
   useEffect(() => {
-    if (selectedTab === 'online' || selectedTab === 'all' || selectedTab === 'blocked' || selectedTab === 'pending') {
+    if (
+      selectedTab === "online" ||
+      selectedTab === "all" ||
+      selectedTab === "blocked" ||
+      selectedTab === "pending"
+    ) {
       fetchFriends(selectedTab);
     }
   }, [selectedTab]);
@@ -100,11 +147,13 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
     setLoading(true);
 
     try {
-      const userDoc = await getDoc(doc(db, 'Users', newFriendId));
+      const userDoc = await getDoc(doc(db, "Users", newFriendId));
       if (userDoc.exists()) {
-        await addDoc(collection(db, 'Users', currentUserId!, 'Friends'), { userId: newFriendId });
+        await addDoc(collection(db, "Users", currentUserId!, "Friends"), {
+          userId: newFriendId,
+        });
         alert("Friend added successfully");
-        setNewFriendId('');
+        setNewFriendId("");
       } else {
         alert("User not found");
       }
@@ -114,17 +163,26 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
     setLoading(false);
   };
 
-  const handleAcceptFriendRequest = async (requestId: string, senderId: string) => {
+  const handleAcceptFriendRequest = async (
+    requestId: string,
+    senderId: string
+  ) => {
     if (!currentUserId) return;
 
     try {
-      await updateDoc(doc(db, 'FriendRequests', requestId), { status: 'accepted' });
-      await addDoc(collection(db, 'Users', currentUserId, 'Friends'), { userId: senderId });
-      await addDoc(collection(db, 'Users', senderId, 'Friends'), { userId: currentUserId });
-      alert('Friend request accepted');
-      fetchFriends('pending');
+      await updateDoc(doc(db, "FriendRequests", requestId), {
+        status: "accepted",
+      });
+      await addDoc(collection(db, "Users", currentUserId, "Friends"), {
+        userId: senderId,
+      });
+      await addDoc(collection(db, "Users", senderId, "Friends"), {
+        userId: currentUserId,
+      });
+      alert("Friend request accepted");
+      fetchFriends("pending");
     } catch (error) {
-      console.error('Error accepting friend request:', error);
+      console.error("Error accepting friend request:", error);
     }
   };
 
@@ -132,11 +190,13 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
     if (!currentUserId) return;
 
     try {
-      await updateDoc(doc(db, 'FriendRequests', requestId), { status: 'declined' });
-      alert('Friend request declined');
-      fetchFriends('pending');
+      await updateDoc(doc(db, "FriendRequests", requestId), {
+        status: "declined",
+      });
+      alert("Friend request declined");
+      fetchFriends("pending");
     } catch (error) {
-      console.error('Error declining friend request:', error);
+      console.error("Error declining friend request:", error);
     }
   };
 
@@ -144,11 +204,11 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
     if (!currentUserId) return;
 
     try {
-      await deleteDoc(doc(db, 'Users', currentUserId, 'Friends', friendId));
-      setFriends(friends.filter(friend => friend.id !== friendId));
-      alert('Friend removed successfully');
+      await deleteDoc(doc(db, "Users", currentUserId, "Friends", friendId));
+      setFriends(friends.filter((friend) => friend.id !== friendId));
+      alert("Friend removed successfully");
     } catch (error) {
-      console.error('Error removing friend:', error);
+      console.error("Error removing friend:", error);
     }
   };
 
@@ -156,16 +216,20 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
     if (!currentUserId) return;
 
     try {
-      const friendDoc = await getDoc(doc(db, 'Users', currentUserId, 'Friends', friendId));
+      const friendDoc = await getDoc(
+        doc(db, "Users", currentUserId, "Friends", friendId)
+      );
       if (friendDoc.exists()) {
         const friendData = friendDoc.data();
-        await addDoc(collection(db, 'Users', currentUserId, 'Blocked'), { userId: friendData.userId });
-        await deleteDoc(doc(db, 'Users', currentUserId, 'Friends', friendId));
-        setFriends(friends.filter(friend => friend.id !== friendId));
-        alert('Friend blocked successfully');
+        await addDoc(collection(db, "Users", currentUserId, "Blocked"), {
+          userId: friendData.userId,
+        });
+        await deleteDoc(doc(db, "Users", currentUserId, "Friends", friendId));
+        setFriends(friends.filter((friend) => friend.id !== friendId));
+        alert("Friend blocked successfully");
       }
     } catch (error) {
-      console.error('Error blocking friend:', error);
+      console.error("Error blocking friend:", error);
     }
   };
 
@@ -173,11 +237,11 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
     if (!currentUserId) return;
 
     try {
-      await deleteDoc(doc(db, 'Users', currentUserId, 'Blocked', userId));
-      setFriends(friends.filter(friend => friend.id !== userId));
-      alert('User unblocked successfully');
+      await deleteDoc(doc(db, "Users", currentUserId, "Blocked", userId));
+      setFriends(friends.filter((friend) => friend.id !== userId));
+      alert("User unblocked successfully");
     } catch (error) {
-      console.error('Error unblocking user:', error);
+      console.error("Error unblocking user:", error);
     }
   };
 
@@ -188,8 +252,12 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'online' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
-              onClick={() => setSelectedTab('online')}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${
+                selectedTab === "online"
+                  ? "bg-blue-700 text-[--primary-text-color] dark:bg-blue-600"
+                  : "hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]"
+              }`}
+              onClick={() => setSelectedTab("online")}
             >
               Online
             </a>
@@ -197,8 +265,12 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'all' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
-              onClick={() => setSelectedTab('all')}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${
+                selectedTab === "all"
+                  ? "bg-blue-700 text-[--primary-text-color] dark:bg-blue-600"
+                  : "hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]"
+              }`}
+              onClick={() => setSelectedTab("all")}
             >
               All
             </a>
@@ -206,8 +278,12 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'pending' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
-              onClick={() => setSelectedTab('pending')}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${
+                selectedTab === "pending"
+                  ? "bg-blue-700 text-[--primary-text-color] dark:bg-blue-600"
+                  : "hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]"
+              }`}
+              onClick={() => setSelectedTab("pending")}
             >
               Pending
             </a>
@@ -215,8 +291,12 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'blocked' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
-              onClick={() => setSelectedTab('blocked')}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${
+                selectedTab === "blocked"
+                  ? "bg-blue-700 text-[--primary-text-color] dark:bg-blue-600"
+                  : "hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]"
+              }`}
+              onClick={() => setSelectedTab("blocked")}
             >
               Blocked
             </a>
@@ -224,8 +304,12 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <li>
             <a
               href="#"
-              className={`inline-flex items-center px-4 py-3 rounded-lg ${selectedTab === 'addFriend' ? 'bg-blue-700 text-[--primary-text-color] dark:bg-blue-600' : 'hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]'}`}
-              onClick={() => setSelectedTab('addFriend')}
+              className={`inline-flex items-center px-4 py-3 rounded-lg ${
+                selectedTab === "addFriend"
+                  ? "bg-blue-700 text-[--primary-text-color] dark:bg-blue-600"
+                  : "hover:text-gray-900 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-[--primary-text-color]"
+              }`}
+              onClick={() => setSelectedTab("addFriend")}
             >
               Add Friend
             </a>
@@ -239,7 +323,7 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
           <p className="text-center">Empty...</p>
         ) : (
           <div>
-            {selectedTab === 'addFriend' ? (
+            {selectedTab === "addFriend" ? (
               <div>
                 <input
                   type="text"
@@ -255,39 +339,90 @@ const FriendCategory: React.FC<FriendCategoryProps> = ({ selectedTab, setSelecte
                   Add Friend
                 </button>
               </div>
-            ) : selectedTab === 'pending' ? (
-              friends.map(friend => (
-                <div key={friend.id} className="mb-4 flex items-center justify-between">
+            ) : selectedTab === "pending" ? (
+              friends.map((friend) => (
+                <div
+                  key={friend.id}
+                  className="mb-4 flex items-center justify-between"
+                >
                   <div className="flex items-center">
-                    <img src={friend.profilePicture} alt="Profile" className="w-10 h-10 rounded-full mr-4" />
+                    <img
+                      src={friend.profilePicture}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full mr-4"
+                    />
                     <div>
-                      <p className="text-[--primary-text-color] text-left">{friend.displayName}</p>
-                      <p className="text-[--secondary-text-color] text-sm text-left">{friend.customStatus || (friend.isOnline ? "Online" : "Offline")}</p>
+                      <p className="text-[--primary-text-color] text-left">
+                        {friend.displayName}
+                      </p>
+                      <p className="text-[--secondary-text-color] text-sm text-left">
+                        {friend.customStatus ||
+                          (friend.isOnline ? "Online" : "Offline")}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <button onClick={() => handleAcceptFriendRequest(friend.id, friend.senderId)} className="px-3 py-1 rounded bg-green-600 text-[--primary-text-color]">Accept</button>
-                    <button onClick={() => handleDeclineFriendRequest(friend.id)} className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]">Decline</button>
+                    <button
+                      onClick={() =>
+                        handleAcceptFriendRequest(friend.id, friend.senderId)
+                      }
+                      className="px-3 py-1 rounded bg-green-600 text-[--primary-text-color]"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => handleDeclineFriendRequest(friend.id)}
+                      className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]"
+                    >
+                      Decline
+                    </button>
                   </div>
                 </div>
               ))
             ) : (
-              friends.map(friend => (
-                <div key={friend.id} className="mb-4 flex items-center justify-between">
+              friends.map((friend) => (
+                <div
+                  key={friend.id}
+                  className="mb-4 flex items-center justify-between"
+                >
                   <div className="flex items-center">
-                    <img src={friend.profilePicture} alt="Profile" className="w-10 h-10 rounded-full mr-4" />
+                    <img
+                      src={friend.profilePicture}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full mr-4"
+                    />
                     <div>
-                      <p className="text-[--primary-text-color] text-left">{friend.displayName || friend.userId}</p>
-                      <p className="text-[--secondary-text-color] text-sm text-left">{friend.customStatus || (friend.isOnline ? "Online" : "Offline")}</p>
+                      <p className="text-[--primary-text-color] text-left">
+                        {friend.displayName || friend.userId}
+                      </p>
+                      <p className="text-[--secondary-text-color] text-sm text-left">
+                        {friend.customStatus ||
+                          (friend.isOnline ? "Online" : "Offline")}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
-                  {selectedTab === 'blocked' ? (
-                      <button onClick={() => handleUnblockUser(friend.id)} className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]">Unblock</button>
+                    {selectedTab === "blocked" ? (
+                      <button
+                        onClick={() => handleUnblockUser(friend.id)}
+                        className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]"
+                      >
+                        Unblock
+                      </button>
                     ) : (
                       <>
-                        <button onClick={() => handleRemoveFriend(friend.id)} className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]">Remove</button>
-                        <button onClick={() => handleBlockFriend(friend.id)} className="px-3 py-1 rounded bg-purple-600 text-[--primary-text-color]">Block</button>
+                        <button
+                          onClick={() => handleRemoveFriend(friend.id)}
+                          className="px-3 py-1 rounded bg-red-600 text-[--primary-text-color]"
+                        >
+                          Remove
+                        </button>
+                        <button
+                          onClick={() => handleBlockFriend(friend.id)}
+                          className="px-3 py-1 rounded bg-purple-600 text-[--primary-text-color]"
+                        >
+                          Block
+                        </button>
                       </>
                     )}
                   </div>

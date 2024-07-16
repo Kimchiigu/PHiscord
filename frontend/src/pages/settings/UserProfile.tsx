@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../provider/AuthProvider';
 import { db, storage } from '../../FirebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
-import Modal from './Modal';
+import Modal from './SettingsModal';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';

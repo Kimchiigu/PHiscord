@@ -1,12 +1,28 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { db, storage } from '../../FirebaseConfig';
-import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, startAfter, where } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { useAuth } from '../provider/AuthProvider';
-import { useToast } from '../provider/ToastProvider';
-import Message from '../Message';
+import React, { useEffect, useState, useRef } from "react";
+import { db, storage } from "../../FirebaseConfig";
+import {
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  updateDoc,
+  doc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  limit,
+  startAfter,
+  where,
+} from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useAuth } from "../provider/AuthProvider";
+import { useToast } from "../provider/ToastProvider";
+import Message from "../Message";
 
-const { ipcRenderer } = window.require ? window.require('electron') : { ipcRenderer: null };
+const { ipcRenderer } = window.require
+  ? window.require("electron")
+  : { ipcRenderer: null };
 
 interface MessageData {
   id: string;
@@ -21,36 +37,40 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   const { currentUser } = useAuth();
   const { showToast } = useToast();
   const [messages, setMessages] = useState<MessageData[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [emojiTrayVisible, setEmojiTrayVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState<{ id: string; visible: boolean }>({ id: '', visible: false });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState<{
+    id: string;
+    visible: boolean;
+  }>({ id: "", visible: false });
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MessageData[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
-  const [friendDisplayName, setFriendDisplayName] = useState<string>('');
-  const [dmId, setDmId] = useState<string | null>(null);
+  const [friendDisplayName, setFriendDisplayName] = useState<string>("");
+  const [dmId, setDmId] = useState<string>("");
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const defaultProfilePicture = "https://cdn.discordapp.com/embed/avatars/0.png";
-  const emojis = ['😀', '😂', '😍', '😎', '😭', '😡', '👍', '👎', '🙏', '💪'];
+  const defaultProfilePicture =
+    "https://cdn.discordapp.com/embed/avatars/0.png";
+  const emojis = ["😀", "😂", "😍", "😎", "😭", "😡", "👍", "👎", "🙏", "💪"];
 
   const isImage = (url: string) => /(\.jpeg|\.jpg|\.gif|\.png)$/.test(url);
   const isVideo = (url: string) => /(\.mp4|\.webm|\.ogg)$/.test(url);
 
   useEffect(() => {
     if (!friendId || !currentUser) {
-      console.error('Friend ID or current user is not defined');
+      console.error("Friend ID or current user is not defined");
       return;
     }
 
     const fetchDmId = async () => {
       try {
         const dmsQuery = query(
-          collection(db, 'DirectMessages'),
-          where('participants', 'array-contains', currentUser.uid)
+          collection(db, "DirectMessages"),
+          where("participants", "array-contains", currentUser.uid)
         );
         const dmsSnapshot = await getDocs(dmsQuery);
         let dmFound = false;
@@ -65,13 +85,13 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
         }
 
         if (!dmFound) {
-          const newDmDoc = await addDoc(collection(db, 'DirectMessages'), {
+          const newDmDoc = await addDoc(collection(db, "DirectMessages"), {
             participants: [currentUser.uid, friendId],
           });
           setDmId(newDmDoc.id);
         }
       } catch (error) {
-        console.error('Error fetching DM ID:', error);
+        console.error("Error fetching DM ID:", error);
       }
     };
 
@@ -84,15 +104,28 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
     const fetchMessages = () => {
       setLoading(true);
       try {
-        const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
-        const messagesQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(20));
+        const messagesCollection = collection(
+          db,
+          "DirectMessages",
+          dmId,
+          "Messages"
+        );
+        const messagesQuery = query(
+          messagesCollection,
+          orderBy("timestamp", "desc"),
+          limit(20)
+        );
 
         onSnapshot(messagesQuery, (snapshot) => {
-          const messagesList = snapshot.docs.map(doc => ({
+          const messagesList = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
-            timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date(),
-            editedTimestamp: doc.data().editedTimestamp ? doc.data().editedTimestamp.toDate() : undefined
+            timestamp: doc.data().timestamp
+              ? doc.data().timestamp.toDate()
+              : new Date(),
+            editedTimestamp: doc.data().editedTimestamp
+              ? doc.data().editedTimestamp.toDate()
+              : undefined,
           })) as MessageData[];
           setMessages(messagesList.reverse());
           setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
@@ -100,7 +133,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
           scrollToBottom();
         });
       } catch (error) {
-        console.error('Error fetching messages:', error);
+        console.error("Error fetching messages:", error);
         setLoading(false);
       }
     };
@@ -111,15 +144,15 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   useEffect(() => {
     const fetchFriendDisplayName = async () => {
       try {
-        const friendDoc = await getDoc(doc(db, 'Users', friendId));
+        const friendDoc = await getDoc(doc(db, "Users", friendId));
         if (friendDoc.exists()) {
-          setFriendDisplayName(friendDoc.data().displayName || 'Unknown');
+          setFriendDisplayName(friendDoc.data().displayName || "Unknown");
         } else {
-          setFriendDisplayName('Unknown');
+          setFriendDisplayName("Unknown");
         }
       } catch (error) {
-        console.error('Error fetching friend display name:', error);
-        setFriendDisplayName('Unknown');
+        console.error("Error fetching friend display name:", error);
+        setFriendDisplayName("Unknown");
       }
     };
 
@@ -129,16 +162,19 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
   useEffect(() => {
     if (!currentUser) return;
 
-    const q = query(collection(db, 'Notifications'), where('userId', '==', currentUser.uid));
+    const q = query(
+      collection(db, "Notifications"),
+      where("userId", "==", currentUser.uid)
+    );
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       querySnapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') {
+        if (change.type === "added") {
           const notification = change.doc.data();
-          showToast(`New message from ${notification.sender}`, 'info');
-          
+          showToast(`New message from ${notification.sender}`, "info");
+
           if (ipcRenderer) {
-            ipcRenderer.send('show-notification', {
-              title: 'Direct Message',
+            ipcRenderer.send("show-notification", {
+              title: "Direct Message",
               body: `New message from ${notification.sender}`,
             });
           }
@@ -154,27 +190,39 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
 
     setLoading(true);
     try {
-      const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
+      const messagesCollection = collection(
+        db,
+        "DirectMessages",
+        dmId,
+        "Messages"
+      );
       const messagesQuery = query(
         messagesCollection,
-        orderBy('timestamp', 'desc'),
+        orderBy("timestamp", "desc"),
         startAfter(lastVisible),
         limit(20)
       );
 
       const messageSnapshot = await getDocs(messagesQuery);
-      const olderMessages = messageSnapshot.docs.map(doc => ({
+      const olderMessages = messageSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-        timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date(),
-        editedTimestamp: doc.data().editedTimestamp ? doc.data().editedTimestamp.toDate() : undefined
+        timestamp: doc.data().timestamp
+          ? doc.data().timestamp.toDate()
+          : new Date(),
+        editedTimestamp: doc.data().editedTimestamp
+          ? doc.data().editedTimestamp.toDate()
+          : undefined,
       })) as MessageData[];
 
-      setMessages(prevMessages => [...olderMessages.reverse(), ...prevMessages]);
+      setMessages((prevMessages) => [
+        ...olderMessages.reverse(),
+        ...prevMessages,
+      ]);
       setLastVisible(messageSnapshot.docs[messageSnapshot.docs.length - 1]);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching older messages:', error);
+      console.error("Error fetching older messages:", error);
       setLoading(false);
     }
   };
@@ -187,60 +235,67 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
 
   const handleSendMessage = async () => {
     if (!dmId || !currentUser) {
-      console.error('DM ID or current user is not defined');
+      console.error("DM ID or current user is not defined");
       return;
     }
-  
-    if (newMessage.trim() === '' && !selectedFile) return;
-    const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
+
+    if (newMessage.trim() === "" && !selectedFile) return;
+    const messagesCollection = collection(
+      db,
+      "DirectMessages",
+      dmId,
+      "Messages"
+    );
     const timestamp = new Date();
-    let fileUrl = '';
-  
+    let fileUrl = "";
+
     if (selectedFile) {
       const fileRef = ref(storage, `files/${dmId}/${selectedFile.name}`);
       await uploadBytes(fileRef, selectedFile);
       fileUrl = await getDownloadURL(fileRef);
     }
-  
+
     await addDoc(messagesCollection, {
-      user: currentUser.displayName || 'Anonymous',
+      user: currentUser.displayName || "Anonymous",
       message: fileUrl || newMessage,
       timestamp,
       profilePicture: currentUser.profilePicture || defaultProfilePicture,
     });
-  
+
     // Notify friend
-    await addDoc(collection(db, 'Notifications'), {
+    await addDoc(collection(db, "Notifications"), {
       userId: friendId,
-      type: 'DM',
-      sender: currentUser.displayName || 'Anonymous',
+      type: "DM",
+      sender: currentUser.displayName || "Anonymous",
       content: fileUrl || newMessage,
       docId: dmId,
       timestamp,
     });
-  
+
     // Show toast to the receiver
-    const receiverDoc = await getDoc(doc(db, 'Users', friendId));
+    const receiverDoc = await getDoc(doc(db, "Users", friendId));
     if (receiverDoc.exists()) {
       const receiverData = receiverDoc.data();
       if (receiverData?.uid === friendId) {
-        showToast(`New message from ${currentUser.displayName || 'Anonymous'}`, 'info');
-  
+        showToast(
+          `New message from ${currentUser.displayName || "Anonymous"}`,
+          "info"
+        );
+
         if (ipcRenderer) {
-          ipcRenderer.send('show-notification', {
-            title: 'Direct Message',
-            body: `New message from ${currentUser.displayName || 'Anonymous'}`,
+          ipcRenderer.send("show-notification", {
+            title: "Direct Message",
+            body: `New message from ${currentUser.displayName || "Anonymous"}`,
           });
         }
       }
     }
-  
-    setNewMessage('');
+
+    setNewMessage("");
     setSelectedFile(null);
     setFilePreview(null);
     scrollToBottom();
   };
-  
 
   const handleSelectEmoji = (emoji: string) => {
     setNewMessage(newMessage + emoji);
@@ -266,11 +321,11 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
 
   const handleEditMessage = async (id: string, newMessage: string) => {
     if (!dmId || !currentUser) {
-      console.error('DM ID or current user is not defined');
+      console.error("DM ID or current user is not defined");
       return;
     }
 
-    const messageDoc = doc(db, 'DirectMessages', dmId, 'Messages', id);
+    const messageDoc = doc(db, "DirectMessages", dmId, "Messages", id);
     await updateDoc(messageDoc, {
       message: newMessage,
       editedTimestamp: new Date(),
@@ -279,13 +334,13 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
 
   const handleDeleteMessage = async (id: string) => {
     if (!dmId || !currentUser) {
-      console.error('DM ID or current user is not defined');
+      console.error("DM ID or current user is not defined");
       return;
     }
 
-    const messageDoc = doc(db, 'DirectMessages', dmId, 'Messages', id);
+    const messageDoc = doc(db, "DirectMessages", dmId, "Messages", id);
     await deleteDoc(messageDoc);
-    setShowDeleteModal({ id: '', visible: false });
+    setShowDeleteModal({ id: "", visible: false });
   };
 
   const handleSearch = async () => {
@@ -296,18 +351,25 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
 
     setLoading(true);
     try {
-      const messagesCollection = collection(db, 'DirectMessages', dmId, 'Messages');
+      const messagesCollection = collection(
+        db,
+        "DirectMessages",
+        dmId,
+        "Messages"
+      );
       const messageSnapshot = await getDocs(messagesCollection);
 
       const results: MessageData[] = [];
-      messageSnapshot.forEach(doc => {
+      messageSnapshot.forEach((doc) => {
         const messageData = doc.data() as MessageData;
         if (messageData.message.includes(searchQuery)) {
           results.push({
-            id: doc.id,
+            // id: doc.id,
             ...messageData,
             timestamp: messageData.timestamp.toDate(),
-            editedTimestamp: messageData.editedTimestamp ? messageData.editedTimestamp.toDate() : undefined
+            editedTimestamp: messageData.editedTimestamp
+              ? messageData.editedTimestamp.toDate()
+              : undefined,
           });
         }
       });
@@ -315,7 +377,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
       setSearchResults(results);
       setLoading(false);
     } catch (error) {
-      console.error('Error searching messages:', error);
+      console.error("Error searching messages:", error);
       setLoading(false);
     }
   };
@@ -326,20 +388,21 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
       const elementOffset = messageElement.offsetTop;
       chatContainerRef.current.scrollTo({
         top: elementOffset - 100,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
-      messageElement.classList.add('highlight');
+      messageElement.classList.add("highlight");
       setTimeout(() => {
-        messageElement.classList.remove('highlight');
+        messageElement.classList.remove("highlight");
       }, 1000);
-      setSearchQuery('');
+      setSearchQuery("");
       setSearchResults([]);
     }
   };
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   };
 
@@ -358,11 +421,11 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
             placeholder="Search messages"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => setSearchQuery("")}
               className="ml-2 text-[--secondary-text-color] hover:text-gray-200"
             >
               Cancel
@@ -372,26 +435,38 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
       </div>
       {searchResults.length > 0 && (
         <div className="absolute top-16 left-0 right-0 bg-[--secondary-bg-color] p-4 max-h-64 overflow-y-auto z-10 overflow-x-hidden mx-2 rounded-md">
-          {searchResults.map(result => (
+          {searchResults.map((result) => (
             <div
               key={result.id}
               className="text-[--primary-text-color] cursor-pointer p-2 hover:bg-[--primary-bg-color]"
               onClick={() => handleSelectSearchResult(result.id)}
             >
-              <p><strong>{result.user}:</strong> {result.message}</p>
-              <span className="text-[--secondary-text-color] text-xs">{new Date(result.timestamp).toLocaleString()}</span>
+              <p>
+                <strong>{result.user}:</strong> {result.message}
+              </p>
+              <span className="text-[--secondary-text-color] text-xs">
+                {new Date(result.timestamp).toLocaleString()}
+              </span>
             </div>
           ))}
         </div>
       )}
       {searchResults.length === 0 && searchQuery && (
         <div className="absolute top-16 left-0 right-0 bg-[--secondary-bg-color] p-4 z-10 mx-3 rounded-md">
-          <p className="text-[--primary-text-color] text-center">No Result Found!</p>
+          <p className="text-[--primary-text-color] text-center">
+            No Result Found!
+          </p>
         </div>
       )}
-      <div className="px-6 py-4 flex-1 overflow-y-scroll" onScroll={handleScroll} ref={chatContainerRef}>
+      <div
+        className="px-6 py-4 flex-1 overflow-y-scroll"
+        onScroll={handleScroll}
+        ref={chatContainerRef}
+      >
         {loading ? (
-          <p className="text-[--secondary-text-color] text-center">Loading messages...</p>
+          <p className="text-[--secondary-text-color] text-center">
+            Loading messages...
+          </p>
         ) : (
           messages.map((msg) => (
             <Message
@@ -401,7 +476,11 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
               user={msg.user}
               message={msg.message}
               time={new Date(msg.timestamp).toLocaleTimeString()}
-              editedTime={msg.editedTimestamp ? new Date(msg.editedTimestamp).toLocaleTimeString() : undefined}
+              editedTime={
+                msg.editedTimestamp
+                  ? new Date(msg.editedTimestamp).toLocaleTimeString()
+                  : undefined
+              }
               onDelete={() => setShowDeleteModal({ id: msg.id, visible: true })}
               onEdit={(newMessage) => handleEditMessage(msg.id, newMessage)}
               isMentioned={false} // No mentions in friend chat
@@ -412,10 +491,12 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
       {showDeleteModal.visible && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-[--secondary-bg-color] p-4 rounded-lg">
-            <h2 className="text-[--primary-text-color] mb-4">Are you sure you want to delete this message?</h2>
+            <h2 className="text-[--primary-text-color] mb-4">
+              Are you sure you want to delete this message?
+            </h2>
             <div className="flex justify-end">
               <button
-                onClick={() => setShowDeleteModal({ id: '', visible: false })}
+                onClick={() => setShowDeleteModal({ id: "", visible: false })}
                 className="text-[--secondary-text-color] hover:text-gray-200 mr-4"
               >
                 Cancel
@@ -440,7 +521,11 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
               ✖
             </button>
             {isImage(filePreview) ? (
-              <img src={filePreview} alt="Preview" className="max-w-full h-auto rounded" />
+              <img
+                src={filePreview}
+                alt="Preview"
+                className="max-w-full h-auto rounded"
+              />
             ) : isVideo(filePreview) ? (
               <video controls className="max-w-full h-auto rounded">
                 <source src={filePreview} type="video/mp4" />
@@ -472,13 +557,22 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
           </div>
         )}
         <div className="flex rounded-lg overflow-hidden mt-2">
-          <span className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer" onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}>
+          <span
+            className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer"
+            onClick={() => setEmojiTrayVisible(!emojiTrayVisible)}
+          >
             😊
           </span>
           {emojiTrayVisible && (
             <div className="absolute bottom-16 bg-[--secondary-bg-color] p-2 rounded shadow-lg grid grid-cols-5 gap-2">
-              {emojis.map(emoji => (
-                <span key={emoji} className="text-2xl cursor-pointer" onClick={() => handleSelectEmoji(emoji)}>{emoji}</span>
+              {emojis.map((emoji) => (
+                <span
+                  key={emoji}
+                  className="text-2xl cursor-pointer"
+                  onClick={() => handleSelectEmoji(emoji)}
+                >
+                  {emoji}
+                </span>
               ))}
             </div>
           )}
@@ -488,7 +582,7 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
             placeholder={`Message @${friendDisplayName}`}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
           />
           <input
             type="file"
@@ -496,10 +590,16 @@ const FriendChat: React.FC<{ friendId: string }> = ({ friendId }) => {
             id="fileInput"
             onChange={handleFileChange}
           />
-          <label htmlFor="fileInput" className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer">
+          <label
+            htmlFor="fileInput"
+            className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer"
+          >
             📎
           </label>
-          <span className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer" onClick={handleSendMessage}>
+          <span
+            className="text-3xl text-grey border-r-4 border-[--secondary-bg-color] bg-[--secondary-bg-color] p-2 cursor-pointer"
+            onClick={handleSendMessage}
+          >
             📤
           </span>
         </div>

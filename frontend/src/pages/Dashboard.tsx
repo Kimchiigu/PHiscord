@@ -1,53 +1,98 @@
-import React, { useState, useEffect } from 'react';
-import { db } from '../FirebaseConfig';
-import { collection, query, where, onSnapshot, updateDoc, doc, getDocs, getDoc } from 'firebase/firestore';
-import '../App.css';
-import Sidebar from './Sidebar';
-import ChannelList from './channel/ChannelList';
-import MemberList from './channel/MemberList';
-import Chat from './Chat';
-import FriendList from './friend/FriendList';
-import FriendChat from './friend/FriendChat';
-import FriendProfile from './friend/FriendProfile';
-import FriendCategory from './friend/FriendCategory';
-import VoiceChannel from './channel/VoiceChannel';
-import FriendCall from './friend/FriendCall';
-import CallNotificationModal from './friend/CallNotificationModal';
-import Notification from './Notification';
-import { useAuth } from './provider/AuthProvider';
+import React, { useState, useEffect } from "react";
+import { db } from "../FirebaseConfig";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  updateDoc,
+  doc,
+  getDocs,
+  getDoc,
+} from "firebase/firestore";
+import "../App.css";
+import Sidebar from "./Sidebar";
+import ChannelList from "./channel/ChannelList";
+import MemberList from "./channel/MemberList";
+import Chat from "./Chat";
+import FriendList from "./friend/FriendList";
+import FriendChat from "./friend/FriendChat";
+import FriendProfile from "./friend/FriendProfile";
+import FriendCategory from "./friend/FriendCategory";
+import VoiceChannel from "./channel/VoiceChannel";
+import FriendCall from "./friend/FriendCall";
+import CallNotificationModal from "./friend/CallNotificationModal";
+import Notification from "./Notification";
+import { useAuth } from "./provider/AuthProvider";
 
-const ipcRenderer = typeof window !== 'undefined' && window.require ? window.require('electron').ipcRenderer : null;
+const ipcRenderer =
+  typeof window !== "undefined" && window.require
+    ? window.require("electron").ipcRenderer
+    : null;
 
 const Dashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const [selectedServer, setSelectedServer] = useState<{ id: string; name: string; isOwner: boolean } | null>(null);
-  const [selectedChannel, setSelectedChannel] = useState<{ id: string; name: string; type: 'text' | 'voice' } | null>(null);
-  const [selectedFriend, setSelectedFriend] = useState<{ userId: string; displayName: string } | null>(null);
+  const [selectedServer, setSelectedServer] = useState<{
+    id: string;
+    name: string;
+    isOwner: boolean;
+  } | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState<{
+    id: string;
+    name: string;
+    type: "text" | "voice";
+  } | null>(null);
+  const [selectedFriend, setSelectedFriend] = useState<{
+    userId: string;
+    displayName: string;
+  } | null>(null);
   const [dmSelected, setDmSelected] = useState<boolean>(true); // Set DM as default selected
-  const [selectedTab, setSelectedTab] = useState<'friends' | 'online' | 'all' | 'pending' | 'blocked' | 'addFriend'>('friends');
-  const [categorySelected, setCategorySelected] = useState<'friends' | 'notifications' | null>(null);
-  const [callData, setCallData] = useState<{ callType: 'voice' | 'video'; friendId: string; dmDocId: string } | null>(null);
-  const [incomingCall, setIncomingCall] = useState<{ from: string; displayName: string; type: 'voice' | 'video'; dmDocId: string } | null>(null);
+  const [selectedTab, setSelectedTab] = useState<
+    "friends" | "online" | "all" | "pending" | "blocked" | "addFriend"
+  >("friends");
+  const [categorySelected, setCategorySelected] = useState<
+    "friends" | "notifications" | null
+  >(null);
+  const [callData, setCallData] = useState<{
+    callType: "voice" | "video";
+    friendId: string;
+    dmDocId: string;
+  } | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{
+    from: string;
+    displayName: string;
+    type: "voice" | "video";
+    dmDocId: string;
+  } | null>(null);
 
   useEffect(() => {
     if (currentUser) {
       if (ipcRenderer) {
-        ipcRenderer.send('set-current-user-id', currentUser.uid);
+        ipcRenderer.send("set-current-user-id", currentUser.uid);
       }
 
-      const q = query(collection(db, 'DirectMessages'), where('participants', 'array-contains', currentUser.uid));
+      const q = query(
+        collection(db, "DirectMessages"),
+        where("participants", "array-contains", currentUser.uid)
+      );
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         querySnapshot.forEach((docSnapshot) => {
           const data = docSnapshot.data();
-          console.log('onSnapshot data:', data);
-          if (data.callStatus === 'waiting' && data.callData.to === currentUser.uid) {
+          console.log("onSnapshot data:", data);
+          if (
+            data.callStatus === "waiting" &&
+            data.callData.to === currentUser.uid
+          ) {
             setIncomingCall({
               from: data.callData.from,
               displayName: data.callData.displayName,
               type: data.callData.type,
               dmDocId: docSnapshot.id,
             });
-          } else if (data.callStatus === 'accepted' && data.callData.from === currentUser.uid) {
+          } else if (
+            data.callStatus === "accepted" &&
+            data.callData.from === currentUser.uid
+          ) {
             setCallData({
               callType: data.callData.type,
               friendId: data.callData.to,
@@ -63,10 +108,16 @@ const Dashboard: React.FC = () => {
     }
   }, [currentUser]);
 
-  const handleCallInitiate = async (callType: 'voice' | 'video', friendId: string, friendDisplayName: string) => {
-    console.log('handleCallInitiate called');
+  const handleCallInitiate = async (
+    callType: "voice" | "video",
+    friendId: string
+  ) => {
+    console.log("handleCallInitiate called");
     if (currentUser) {
-      const q = query(collection(db, 'DirectMessages'), where('participants', 'array-contains', currentUser.uid));
+      const q = query(
+        collection(db, "DirectMessages"),
+        where("participants", "array-contains", currentUser.uid)
+      );
       const querySnapshot = await getDocs(q);
       let dmDocId = null;
       querySnapshot.forEach((docSnapshot) => {
@@ -77,14 +128,17 @@ const Dashboard: React.FC = () => {
       });
 
       if (dmDocId) {
-        const dmRef = doc(db, 'DirectMessages', dmDocId);
+        const dmRef = doc(db, "DirectMessages", dmDocId);
         const dmData = (await getDoc(dmRef)).data();
-        console.log('dmData:', dmData);
+        console.log("dmData:", dmData);
 
-        if (dmData?.callStatus !== 'waiting' && dmData?.callStatus !== 'accepted') {
-          console.log('Updating call status to waiting');
+        if (
+          dmData?.callStatus !== "waiting" &&
+          dmData?.callStatus !== "accepted"
+        ) {
+          console.log("Updating call status to waiting");
           await updateDoc(dmRef, {
-            callStatus: 'waiting',
+            callStatus: "waiting",
             callData: {
               from: currentUser.uid,
               to: friendId,
@@ -94,30 +148,34 @@ const Dashboard: React.FC = () => {
           });
           setCallData({ callType, friendId, dmDocId });
         } else {
-          console.log('Call status is already waiting or accepted');
+          console.log("Call status is already waiting or accepted");
         }
       }
     }
   };
 
   const handleAcceptCall = async () => {
-    console.log('handleAcceptCall called');
+    console.log("handleAcceptCall called");
     if (incomingCall && currentUser) {
-      console.log('Updating call status to accepted');
-      await updateDoc(doc(db, 'DirectMessages', incomingCall.dmDocId), {
-        callStatus: 'accepted',
+      console.log("Updating call status to accepted");
+      await updateDoc(doc(db, "DirectMessages", incomingCall.dmDocId), {
+        callStatus: "accepted",
       });
-      setCallData({ callType: incomingCall.type, friendId: incomingCall.from, dmDocId: incomingCall.dmDocId });
+      setCallData({
+        callType: incomingCall.type,
+        friendId: incomingCall.from,
+        dmDocId: incomingCall.dmDocId,
+      });
       setIncomingCall(null);
     }
   };
 
   const handleDeclineCall = async () => {
-    console.log('handleDeclineCall called');
+    console.log("handleDeclineCall called");
     if (incomingCall && currentUser) {
-      console.log('Updating call status to ended');
-      await updateDoc(doc(db, 'DirectMessages', incomingCall.dmDocId), {
-        callStatus: 'ended',
+      console.log("Updating call status to ended");
+      await updateDoc(doc(db, "DirectMessages", incomingCall.dmDocId), {
+        callStatus: "ended",
       });
       setIncomingCall(null);
       setCallData(null); // Reset call data
@@ -127,7 +185,13 @@ const Dashboard: React.FC = () => {
   const isElectron = window.electron?.isElectron;
 
   return (
-    <div className={isElectron ? "font-sans antialiased h-screen flex mt-16" : "font-sans antialiased h-screen flex w-full"}>
+    <div
+      className={
+        isElectron
+          ? "font-sans antialiased h-screen flex mt-16"
+          : "font-sans antialiased h-screen flex w-full"
+      }
+    >
       {incomingCall && (
         <CallNotificationModal
           callerName={incomingCall.displayName}
@@ -157,11 +221,17 @@ const Dashboard: React.FC = () => {
             serverID={selectedServer.id}
             serverName={selectedServer.name}
             isOwner={selectedServer.isOwner}
-            onChannelSelect={(id, name, nsfw) => setSelectedChannel({ id, name, type: 'text' })}
-            onVoiceChannelSelect={(id, name) => setSelectedChannel({ id, name, type: 'voice' })}
+            onChannelSelect={(id, name) =>
+              setSelectedChannel({ id, name, type: "text" })
+            }
+            onVoiceChannelSelect={(id, name) =>
+              setSelectedChannel({ id, name, type: "voice" })
+            }
+            serverImage={""}
+            isAdmin={false}
           />
           {selectedChannel ? (
-            selectedChannel.type === 'text' ? (
+            selectedChannel.type === "text" ? (
               <Chat
                 serverID={selectedServer.id}
                 channelID={selectedChannel.id}
@@ -176,7 +246,9 @@ const Dashboard: React.FC = () => {
             )
           ) : (
             <div className="flex-1 flex items-center justify-center bg-[--bg-color]">
-              <h2 className="text-[--secondary-text-color]">Select a channel to start chatting</h2>
+              <h2 className="text-[--secondary-text-color]">
+                Select a channel to start chatting
+              </h2>
             </div>
           )}
           <MemberList serverID={selectedServer.id} />
@@ -191,10 +263,13 @@ const Dashboard: React.FC = () => {
             }}
             onCategorySelect={(category) => setCategorySelected(category)}
           />
-          {categorySelected === 'notifications' ? (
+          {categorySelected === "notifications" ? (
             <Notification />
-          ) : categorySelected === 'friends' ? (
-            <FriendCategory selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+          ) : categorySelected === "friends" ? (
+            <FriendCategory
+              selectedTab={selectedTab}
+              setSelectedTab={setSelectedTab}
+            />
           ) : selectedFriend ? (
             <>
               {callData ? (
@@ -206,23 +281,29 @@ const Dashboard: React.FC = () => {
                 />
               ) : (
                 <>
-                  <FriendChat friendId={selectedFriend.userId} friendName={selectedFriend.displayName} />
+                  <FriendChat friendId={selectedFriend.userId} />
                   <FriendProfile
                     friendId={selectedFriend.userId}
-                    onCallInitiate={(callType) => handleCallInitiate(callType, selectedFriend.userId, selectedFriend.displayName)}
+                    onCallInitiate={(callType) =>
+                      handleCallInitiate(callType, selectedFriend.userId)
+                    }
                   />
                 </>
               )}
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center bg-[--bg-color]">
-              <h2 className="text-[--secondary-text-color]">Choose a friend to get started chatting</h2>
+              <h2 className="text-[--secondary-text-color]">
+                Choose a friend to get started chatting
+              </h2>
             </div>
           )}
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center bg-[--bg-color]">
-          <h2 className="text-[--secondary-text-color]">Choose a server or friend to get started</h2>
+          <h2 className="text-[--secondary-text-color]">
+            Choose a server or friend to get started
+          </h2>
         </div>
       )}
     </div>
