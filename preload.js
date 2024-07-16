@@ -3,9 +3,23 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("electron", {
   ipcRenderer: {
     send: (channel, data) => {
-      let validChannels = ["show-notification", "window-control"];
+      let validChannels = [
+        "show-notification",
+        "window-control",
+        "set-current-user-id",
+      ];
       if (validChannels.includes(channel)) {
         ipcRenderer.send(channel, data);
+      }
+    },
+    on: (channel, func) => {
+      let validChannels = [
+        "show-notification",
+        "window-control",
+        "set-current-user-id",
+      ];
+      if (validChannels.includes(channel)) {
+        ipcRenderer.on(channel, (event, ...args) => func(...args));
       }
     },
   },

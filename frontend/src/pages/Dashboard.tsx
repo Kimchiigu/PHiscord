@@ -25,11 +25,6 @@ import CallNotificationModal from "./friend/CallNotificationModal";
 import Notification from "./Notification";
 import { useAuth } from "./provider/AuthProvider";
 
-const ipcRenderer =
-  typeof window !== "undefined" && window.require
-    ? window.require("electron").ipcRenderer
-    : null;
-
 const Dashboard: React.FC = () => {
   const { currentUser } = useAuth();
   const [selectedServer, setSelectedServer] = useState<{
@@ -67,8 +62,12 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      if (ipcRenderer) {
-        ipcRenderer.send("set-current-user-id", currentUser.uid);
+      console.log("Current user in renderer process:", currentUser.uid);
+      if (window.electron && window.electron.ipcRenderer) {
+        window.electron.ipcRenderer.send(
+          "set-current-user-id",
+          currentUser.uid
+        );
       }
 
       const q = query(
