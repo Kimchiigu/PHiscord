@@ -9,11 +9,11 @@ const {
 } = require("electron");
 const path = require("path");
 const { getDoc, updateDoc, doc } = require("firebase/firestore");
-const { db } = require("./FirebaseConfig"); // Ensure your firebase config is correctly imported
+const { db } = require("./FirebaseConfig"); 
 
 let tray;
 let mainWindow;
-let currentUserId = null; // Global variable to store current user ID
+let currentUserId = null;
 
 async function createWindow() {
   mainWindow = new BrowserWindow({
@@ -22,8 +22,8 @@ async function createWindow() {
     frame: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true, // Enable context isolation for security
-      nodeIntegration: false, // Disable Node.js integration
+      contextIsolation: true,
+      nodeIntegration: false, 
     },
     title: "PHiscord",
     icon: path.join(__dirname, "assets/phiscord-logo.ico"),
@@ -83,7 +83,7 @@ async function toggleMute(menuItem) {
         isMuted: !currentMuteStatus,
       });
       menuItem.checked = !currentMuteStatus;
-      updateThumbarButtons(); // Update thumbar buttons to reflect new state
+      updateThumbarButtons();
     }
   } catch (error) {
     console.error("Failed to toggle mute:", error);
@@ -100,7 +100,7 @@ async function toggleDeafen(menuItem) {
         isDeafened: !currentDeafenStatus,
       });
       menuItem.checked = !currentDeafenStatus;
-      updateThumbarButtons(); // Update thumbar buttons to reflect new state
+      updateThumbarButtons(); 
     }
   } catch (error) {
     console.error("Failed to toggle deafen:", error);

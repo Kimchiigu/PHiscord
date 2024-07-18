@@ -154,7 +154,6 @@ const ChannelList: React.FC<ChannelListProps> = ({
 
   const handleCopyInviteLink = () => {
     navigator.clipboard.writeText(inviteLink).then(() => {
-      // Show toast notification
       alert('Invite link copied to clipboard');
     });
   };
@@ -172,7 +171,6 @@ const ChannelList: React.FC<ChannelListProps> = ({
     if (!currentUser) return;
 
     try {
-      // Fetch all member documents to find the unique document ID
       const membersCollection = collection(db, 'Servers', serverID, 'Members');
       const membersSnapshot = await getDocs(membersCollection);
       const memberDoc = membersSnapshot.docs.find((doc) => doc.data().userId === currentUser.uid);
@@ -180,7 +178,6 @@ const ChannelList: React.FC<ChannelListProps> = ({
       if (memberDoc) {
         await deleteDoc(memberDoc.ref);
         setShowLeaveModal(false);
-        // Refresh the server list or redirect the user
         window.location.reload();
       } else {
         alert('Failed to leave server. Member not found.');
@@ -199,7 +196,6 @@ const ChannelList: React.FC<ChannelListProps> = ({
       await deleteDoc(serverDocRef);
       setShowDeleteModal(false);
       alert(`${serverName} has been successfully deleted.`);
-      // Refresh the server list or redirect the user
       window.location.reload();
     } catch (error) {
       console.error('Error deleting server:', error);

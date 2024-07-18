@@ -223,7 +223,6 @@ const MemberList: React.FC<MemberListProps> = ({ serverID }) => {
 
     setDmMessage('');
     setSelectedMember(null);
-    // Navigate to DM list or do something else here
   };
 
   const handleServerNicknameChange = async () => {

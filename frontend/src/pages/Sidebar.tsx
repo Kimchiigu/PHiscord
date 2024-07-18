@@ -15,7 +15,7 @@ interface Server {
 
 interface SidebarProps {
   onServerSelect: (id: string, name: string, isOwner: boolean) => void;
-  onDmSelect: () => void; // Add this prop
+  onDmSelect: () => void; 
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onServerSelect, onDmSelect }) => {

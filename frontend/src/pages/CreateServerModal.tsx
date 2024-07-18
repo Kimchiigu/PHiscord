@@ -41,7 +41,7 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
   const handleCreateServer = async () => {
     if (currentUser && serverName) {
       setUploading(true);
-      let serverIconUrl = 'https://cdn.discordapp.com/embed/avatars/0.png'; // Default placeholder image URL
+      let serverIconUrl = 'https://cdn.discordapp.com/embed/avatars/0.png'; 
 
       if (serverImage) {
         const storageRef = ref(storage, `serverIcons/${currentUser.uid}/${serverImage.name}`);
@@ -66,7 +66,7 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
           role: 'owner'
         });
 
-        onServerCreated(); // Trigger the callback to refresh the server list
+        onServerCreated(); 
         handleClose();
       } catch (error) {
         console.error("Error creating server: ", error);
@@ -79,7 +79,6 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
   const handleJoinServer = async () => {
     if (currentUser && inviteLink) {
       try {
-        // Find the server with the given invite link
         const serversCollection = collection(db, 'Servers');
         const serverSnapshot = await getDocs(serversCollection);
         let serverId = '';
@@ -98,7 +97,7 @@ const Modal: React.FC<ModalProps> = ({ show, onClose, onServerCreated }) => {
             role: 'member'
           });
 
-          onServerCreated(); // Trigger the callback to refresh the server list
+          onServerCreated(); 
           handleClose();
         } else {
           alert("Invalid invite link");
